@@ -5,12 +5,12 @@ A tool for interactive Recruitment Plot generation and viewing
 
 # Requirements
 
-- R
+- RStudio
 - libgit2
 
 # Installation
 
-1. Open an R session
+1. Open an RStudio session
 2. Ensure you have devtools installed:
    ```R
    if(!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
