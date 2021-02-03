@@ -31,9 +31,8 @@
   prepare_environment <- function(){
 
     cat("Checking for Miniconda and installing if necessary...\n")
-    try({
-      install_miniconda()
-    })
+    binary <- try({ conda_binary() }, silent = TRUE)
+    if (class(binary) == 'try-error') try({ install_miniconda() })
 
     #Checking for first-time use of recplots
     if(!"recruitment_plots" %in% conda_list()$name){
