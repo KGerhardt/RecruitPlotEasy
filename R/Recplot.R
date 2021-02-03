@@ -85,7 +85,7 @@
 
     tryCatch({
 
-      use_miniconda(condaenv = "recruitment_plots", required = T )
+      use_condaenv(condaenv = "recruitment_plots", required = T)
 
       recplot_py <- get_python()
 
