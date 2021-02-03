@@ -40,7 +40,7 @@
       conda_create(envname = "recruitment_plots")
     }
 
-    use_miniconda(condaenv = "recruitment_plots", required = T)
+    use_condaenv(condaenv = "recruitment_plots", required = T)
 
     #Default lib.
     plat <- import("platform")
