@@ -11,6 +11,23 @@
 #' @importFrom shinyalert useShinyalert shinyalert
 #' @importFrom htmlwidgets saveWidget
 
+skip = F
+if(!skip){
+
+  library(reticulate)
+  library(ggplot2)
+  library(shiny)
+  library(data.table)
+  library(plotly)
+  library(cowplot)
+  library(enveomics.R)
+  library(shinyBS)
+  library(hms)
+  library(easycsv)
+  library(shinyalert)
+  library(htmlwidgets)
+
+}
 
 #Helper functions
 {
@@ -19,8 +36,6 @@
   get_python <- function(){
 
     recplot_py <- import("RecruitPlotEasy")
-
-    #source_python("https://raw.githubusercontent.com/KGerhardt/Recplot_4/master/Recplot.py", envir = globalenv())
 
     return(recplot_py)
 
@@ -31,8 +46,19 @@
   prepare_environment <- function(){
 
     cat("Checking for Miniconda and installing if necessary...\n")
-    binary <- try({ conda_binary() }, silent = TRUE)
-    if (class(binary) == 'try-error') try({ install_miniconda() })
+
+    binary <- try({
+
+      conda_binary()
+
+      }, silent = TRUE)
+    if(class(binary) == 'try-error'){
+
+      try({
+        install_miniconda()
+        })
+
+    }
 
     #Checking for first-time use of recplots
     if(!"recruitment_plots" %in% conda_list()$name){
@@ -85,7 +111,7 @@
 
     tryCatch({
 
-      use_condaenv(condaenv = "recruitment_plots", required = T)
+      use_miniconda(condaenv = "recruitment_plots", required = T )
 
       recplot_py <- get_python()
 
@@ -442,9 +468,8 @@
     base[, contig_len := max(End), by = contig]
     base[End == contig_len, End := End - trunc_degree, ]
 
-    returnable_base <- base
+    returnable_base <- copy(base)
 
-    #fwrite(base, "base_print_data.txt", sep = "\t")
 
     if("gene_name" %in% colnames(returnable_base)){
 
@@ -469,7 +494,10 @@
 
       #upper left panel
 
+
       depth_data <- returnable_base[, list(sum(raw_count_of_bp_in_bin/(end_pos_in_contig-start_pos_in_contig + 1), na.rm = T), unique(gene_name), unique(gene_start), unique(gene_end), unique(gene_strand), unique(gene_annotation)), by = key(returnable_base)]
+
+
       colnames(depth_data)[4:9] = c("average_sequencing_depth", "gene_name", "gene_start", "gene_end", "gene_strand", "gene_annotation")
 
       setkeyv(depth_data, c("contig_name", "pct_id_group", "start_pos_in_contig"))
@@ -629,8 +657,6 @@ recplot_UI <- function(){
       }
     }
 
-
-
     gene_choices <- c("Prodigal GFF" = "prodigal")
   }
 
@@ -728,6 +754,7 @@ recplot_UI <- function(){
                                     br(),
                                     br(),
                                     h4("Add Genes"),
+                                    #searchable
                                     actionButton('add_genes', 'Add genes to database?', icon = icon("file-upload")),
                                     textInput("add_gen", label = NULL, value = "No genes to add.", width = '100%'),
                                     selectInput('fmt_gen', 'Gene format', selected = "Prodigal GFF", choices = gene_choices, width = '100%'),
@@ -1491,7 +1518,6 @@ recplot_server <- function(input, output, session) {
 
     detected_fmt = "none"
 
-
     tryCatch({
       new_genes <- choose_file(caption = "Select Annotated Genes to Add")
     },
@@ -1540,7 +1566,7 @@ recplot_server <- function(input, output, session) {
       return(NA)
     }
 
-    if(input$add_gen == "No genes to add." | input$add_gen == "No genes selected. Try again?"){
+    if(input$add_gen == "No genes to add." | input$add_gen == "No genes selected. Try again?" | input$add_gen == ""){
       initial_message2 <<- paste0(initial_message2, "\nYou must choose genes before committing them to the database.")
 
       output$message2 <- renderText(initial_message2)
@@ -2462,33 +2488,33 @@ recplot_server <- function(input, output, session) {
       base[, gene_strand := rep(gene_data$strand, each = ratio) ]
       base[, gene_annotation := rep(gene_data$annotation, each = ratio) ]
 
-      gene_base <- base
+      gene_base <- copy(base)
 
       #Genes only
       if(input$regions_stat == 1){
         base <- NULL
-        base <- gene_base
+        base <- copy(gene_base)
 
         base$bp_count[base$gene_annotation == "N/A"] <- NA
       }
       #IGR only
       if(input$regions_stat == 2){
         base <- NULL
-        base <- gene_base
+        base <- copy(gene_base)
 
         base$bp_count[base$gene_annotation != "N/A"] <- NA
       }
       #Genes + long IGR
       if(input$regions_stat == 3){
         base <- NULL
-        base <- gene_base
+        base <- copy(gene_base)
 
         base$bp_count[base$End-base$Start+1 < 6] <- NA
       }
       #All regions
       if(input$regions_stat == 4){
         base <- NULL
-        base <- gene_base
+        base <- copy(gene_base)
 
         base$bp_count <- base$bp_count
       }
@@ -2558,9 +2584,10 @@ recplot_server <- function(input, output, session) {
     bp_unit <- base[[2]]
     bp_div <- base[[3]]
     pos_max <- base[[4]]
-    base <- base[[1]]
 
-    incoming_base <- base
+    base <- copy(base[[1]])
+
+    incoming_base <- copy(base)
 
     ends <- base[, max(End), by = contig]
     ends[, V1 := cumsum(V1) - 1 + 1:nrow(ends)]
@@ -2666,11 +2693,8 @@ recplot_server <- function(input, output, session) {
       }
 
       #fixup alterations
-      gene_reset <- gene_data
-      #If the final bin was too small, removes it.
-      #base <- base[Start <= End,]
+      gene_reset <- copy(gene_data)
 
-      #fwrite(base, "after.tsv", sep ="\t")
 
       ratio <- nrow(base)/nrow(gene_data)
 
@@ -2775,7 +2799,7 @@ recplot_server <- function(input, output, session) {
 
 
       #reset
-      gene_data <- gene_reset
+      gene_data <- copy(gene_reset)
       gene_data <- rbind(gene_data, gene_data)
 
       setkeyv(depth_data, c("group_label", "contig",  "Start", "End"))
@@ -2870,7 +2894,7 @@ recplot_server <- function(input, output, session) {
 
     progress$set(message = "Creating interactive Recruitment Plot", value = 1, detail = "Done!")
 
-    base <- incoming_base
+    base <- copy(incoming_base)
 
     return(overplot)
 
