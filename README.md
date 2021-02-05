@@ -1,18 +1,30 @@
 # RecruitPlotEasy
+
 A tool for interactive Recruitment Plot generation and viewing
 
-# Installation:
 
-1: Open an R session
+# Requirements
 
-2: Ensure you have devtools installed with library(devtools)
+- RStudio
+- libgit2
 
-2a: If you don't have devtools, run install.packages("devtools")
+# Installation
 
-3: Run devtools::install_github("KGerhardt/RecruitPlotEasy")
+1. Open an RStudio session
+2. Ensure you have devtools installed:
+   ```R
+   if(!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+   ```
+3. Install RecruitPlotEasy:
+   ```R
+   devtools::install_github("KGerhardt/RecruitPlotEasy")
+   ```
 
-# Use:
 
-1: After installing, load RecruitPlotEasy with library(RecruitPlotEasy)
+# Use
 
-2: Activate the RecruitPlotEasy GUI and perform first-time installation by running RecruitPlotEasy()
+Load the RecruitPlotEasy library and launch the GUI:
+```R
+library("RecruitPlotEasy")
+RecruitPlotEasy()
+```
