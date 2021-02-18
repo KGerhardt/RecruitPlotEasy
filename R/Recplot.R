@@ -467,7 +467,7 @@ if(!skip){
     if("gene_name" %in% colnames(returnable_base)){
 
       #Remove rows that are SUPPOSED to be missing in a genes plot
-      returnable_base[!is.na(bp_count),]
+      returnable_base <- returnable_base[!is.na(bp_count),]
 
       #Allows for count normalization by bin width across all bins
       norm_factor <- min(returnable_base$End-returnable_base$Start) + 1
@@ -511,9 +511,6 @@ if(!skip){
       returnable_base[, group_label := ifelse(returnable_base$Pct_ID_bin-id_break >= in_grp_min, "in_group", "out_group"), ]
 
       returnable_base <- returnable_base[, list(contig, Start, End, id_lower, Pct_ID_bin, bp_count, normalized_count, group_label),]
-
-      #todo
-      #fwrite(returnable_base, "returnable_base_reorg.txt", sep = "\t")
 
       colnames(returnable_base) = c("contig_name", "start_pos_in_contig", "end_pos_in_contig", "lower_pct_id", "upper_pct_id", "raw_count_of_bp_in_bin", "normalized_count_of_bp_in_bin", "pct_id_group")
 
