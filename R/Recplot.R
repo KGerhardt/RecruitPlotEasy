@@ -200,18 +200,9 @@ if(!skip){
     base[, contig_len := max(End), by = contig]
     base[End == contig_len, End := End - trunc_degree, ]
 
-    #Selects the bins at the end of each contig and subtracts trunc degree from it
-    #base[base[, End > (max(End)-trunc_degree), by = contig]$V1, End := (End - trunc_degree),]
-
-
     #If the final bin was too small, removes it as unplottable.
     base <- base[Start <= End,]
 
-    #fwrite(ends, "endings.txt", sep = "\t")
-
-    #b2 <- base
-    #setkeyv(b2, c("contig", "Start", "Pct_ID_bin"))
-    #fwrite(b2, "base_inital_mod.txt", sep = "\t")
 
     #Allows for count normalization by bin width across all bins
     norm_factor <- min(base$End-base$Start) + 1
@@ -461,15 +452,22 @@ if(!skip){
 
   create_static_data <- function(base, bp_unit, bp_div, pos_max, in_grp_min, id_break, width, linear, showpeaks, ends, trunc_behavior = "ends", trunc_degree = as.integer(75), ...){
 
-    setkeyv(base, c("contig", "Start", "Pct_ID_bin"))
-
-    base[, contig_len := max(End), by = contig]
-    base[End == contig_len, End := End - trunc_degree, ]
-
     returnable_base <- copy(base)
 
+    setkeyv(returnable_base, c("contig", "Start", "Pct_ID_bin"))
+
+    returnable_base <- returnable_base[Start < trunc_degree, Start := trunc_degree]
+
+    returnable_base[, contig_len := max(End), by = contig]
+    returnable_base[End == contig_len, End := End - trunc_degree, ]
+
+    #If the final bin was too small, removes it as unplottable.
+    returnable_base <- returnable_base[Start <= End,]
 
     if("gene_name" %in% colnames(returnable_base)){
+
+      #Remove rows that are SUPPOSED to be missing in a genes plot
+      returnable_base[!is.na(bp_count),]
 
       #Allows for count normalization by bin width across all bins
       norm_factor <- min(returnable_base$End-returnable_base$Start) + 1
@@ -532,9 +530,6 @@ if(!skip){
 
     }
 
-    #I worry that the modify in place permanently whoopsies things, so I change it back just in case
-    base[End == contig_len-trunc_degree, End := End + trunc_degree, ]
-    base[, contig_len := NULL, ]
 
     return(list(returnable_base, depth_data))
 
