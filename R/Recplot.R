@@ -45,15 +45,17 @@ if(!skip){
 
   prepare_environment <- function(){
 
-    cat("Checking for Miniconda and installing if necessary...\n")
+    cat("Checking for conda and installing if necessary...")
 
     binary <- try({
 
       conda_binary()
 
+      conda("conda found!\n")
+
       }, silent = TRUE)
     if(class(binary) == 'try-error'){
-
+      cat("\n")
       try({
         install_miniconda()
         })
@@ -97,11 +99,6 @@ if(!skip){
         })
       }
 
-
-      recplot_py <- get_python()
-
-      return(recplot_py)
-
   }
 
   #Prepares the background miniconda env if necessary; otherwise, sets the environment and loads the python script functions
@@ -119,8 +116,9 @@ if(!skip){
 
       cat("\nPerforming first-time setup. Wait a moment, please.\n")
 
-      recplot_py <- prepare_environment()
+      prepare_environment()
 
+      recplot_py <- get_python()
 
     })
 
@@ -1777,14 +1775,14 @@ recplot_server <- function(input, output, session) {
         on.exit(progress$close())
         progress$set(message = "Printing plot to PDF", value = 0.3, detail = "Please be patient. Creating Plot.")
 
-        base <- one_mag()
+        base <- copy(one_mag())
 
         req(!is.na(base))
 
         bp_unit <- base[[2]]
         bp_div <- base[[3]]
         pos_max <- base[[4]]
-        base <- base[[1]]
+        base <- copy(base[[1]])
 
         ending <- base[, max(End), by = contig]
         ending[, V1 := cumsum(V1) - 1 + 1:nrow(ending)]
@@ -1793,7 +1791,7 @@ recplot_server <- function(input, output, session) {
 
           #Genes only
           if(input$regions_stat == 1){
-            base <- one_mag()[[1]]
+            base <- copy(one_mag()[[1]])
 
             ratio <- nrow(base)/nrow(gene_data)
 
@@ -1810,7 +1808,7 @@ recplot_server <- function(input, output, session) {
           }
           #IGR only
           if(input$regions_stat == 2){
-            base <- one_mag()[[1]]
+            base <- copy(one_mag()[[1]])
 
             ratio <- nrow(base)/nrow(gene_data)
 
@@ -1827,7 +1825,7 @@ recplot_server <- function(input, output, session) {
           }
           #Genes + long IGR
           if(input$regions_stat == 3){
-            base <- one_mag()[[1]]
+            base <- copy(one_mag()[[1]])
 
             ratio <- nrow(base)/nrow(gene_data)
 
@@ -1843,7 +1841,7 @@ recplot_server <- function(input, output, session) {
             base <- base[End-Start+1 < 6, bp_count := NA,]
           }
           if(input$regions_stat == 4){
-            base <- one_mag()[[1]]
+            base <- copy(one_mag()[[1]])
 
             ratio <- nrow(base)/nrow(gene_data)
 
@@ -1944,14 +1942,14 @@ recplot_server <- function(input, output, session) {
         on.exit(progress$close())
         progress$set(message = "Printing data to tab-separated files", value = 0.3, detail = "Formatting data")
 
-        base <- one_mag()
+        base <- copy(one_mag())
 
         req(!is.na(base))
 
         bp_unit <- base[[2]]
         bp_div <- base[[3]]
         pos_max <- base[[4]]
-        base <- base[[1]]
+        base <- copy(base[[1]])
 
         ending <- base[, max(End), by = contig]
         ending[, V1 := cumsum(V1) - 1 + 1:nrow(ending)]
@@ -1960,7 +1958,7 @@ recplot_server <- function(input, output, session) {
 
           #Genes only
           if(input$regions_stat == 1){
-            base <- one_mag()[[1]]
+            base <- copy(one_mag()[[1]])
 
             ratio <- nrow(base)/nrow(gene_data)
 
@@ -1977,7 +1975,7 @@ recplot_server <- function(input, output, session) {
           }
           #IGR only
           if(input$regions_stat == 2){
-            base <- one_mag()[[1]]
+            base <- copy(one_mag()[[1]])
 
             ratio <- nrow(base)/nrow(gene_data)
 
@@ -1994,7 +1992,7 @@ recplot_server <- function(input, output, session) {
           }
           #Genes + long IGR
           if(input$regions_stat == 3){
-            base <- one_mag()[[1]]
+            base <- copy(one_mag()[[1]])
 
             ratio <- nrow(base)/nrow(gene_data)
 
@@ -2011,7 +2009,7 @@ recplot_server <- function(input, output, session) {
           }
           #all regions
           if(input$regions_stat == 4){
-            base <- one_mag()[[1]]
+            base <- copy(one_mag()[[1]])
 
             ratio <- nrow(base)/nrow(gene_data)
 
@@ -2091,14 +2089,14 @@ recplot_server <- function(input, output, session) {
 
     base <- NULL
 
-    base <- one_mag()
+    base <- copy(one_mag())
 
     req(!is.na(base))
 
     bp_unit <- base[[2]]
     bp_div <- base[[3]]
     pos_max <- base[[4]]
-    base <- base[[1]]
+    base <- copy(base[[1]])
 
     incoming_base <- base
 
@@ -2448,14 +2446,14 @@ recplot_server <- function(input, output, session) {
     on.exit(progress$close())
     progress$set(message = "Creating Recruitment Plot", value = 0.5, detail = "Please be patient")
 
-    base <- one_mag()
+    base <- copy(one_mag())
 
     req(!is.na(base))
 
     bp_unit <- base[[2]]
     bp_div <- base[[3]]
     pos_max <- base[[4]]
-    base <- base[[1]]
+    base <- copy(base[[1]])
 
     ending <- base[, max(End), by = contig]
     ending[, V1 := cumsum(V1) - 1 + 1:nrow(ending)]
@@ -2577,7 +2575,7 @@ recplot_server <- function(input, output, session) {
     on.exit(progress$close())
     progress$set(message = "Creating interactive Recruitment Plot", value = 0.16, detail = "Please be patient. The interactive plots take longer.")
 
-    base <- one_mag()
+    base <- copy(one_mag())
 
     req(!is.na(base))
 
@@ -2960,7 +2958,9 @@ recplot_server <- function(input, output, session) {
 RecruitPlotEasy <- function(){
 
   #Import python code.
-  recplot_py <- initiate()
+  initiate()
+  #Just make sure it's available.
+  recplot_py <- get_python()
 
   cat("Recruitment plots ready.\n")
 
