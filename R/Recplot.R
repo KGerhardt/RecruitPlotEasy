@@ -11,23 +11,6 @@
 #' @importFrom shinyalert useShinyalert shinyalert
 #' @importFrom htmlwidgets saveWidget
 
-skip = F
-if(!skip){
-
-  library(reticulate)
-  library(ggplot2)
-  library(shiny)
-  library(data.table)
-  library(plotly)
-  library(cowplot)
-  library(enveomics.R)
-  library(shinyBS)
-  library(hms)
-  library(easycsv)
-  library(shinyalert)
-  library(htmlwidgets)
-
-}
 
 #Helper functions
 {
