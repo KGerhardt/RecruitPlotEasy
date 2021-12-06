@@ -1044,7 +1044,7 @@ recplot_server <- function(input, output, session) {
         name = paste0(gsub(" ", "_", input$dbname), ".db")
 
         if(file.exists(name)){
-          mod_handle <<- recplot_py_redux$reads_database(name)
+          mod_handle <<- recplot_py$reads_database(name)
           is_correct = mod_handle$check_valid()
           if(!is_correct){
             shinyalert("That file already exists, but doens't appear to be a RecruitPlotEasy database. I won't try to modify it.\nPlease select another file.")
@@ -1053,12 +1053,12 @@ recplot_server <- function(input, output, session) {
             mod_handle <<- ""
           }
         }else{
-          mod_handle <<- recplot_py_redux$reads_database(name)
+          mod_handle <<- recplot_py$reads_database(name)
           mod_handle$initialize_db()
         }
 
         if(ready_to_make){
-          plot_handle <<- recplot_py_redux$recruitment_plot_data(name)
+          plot_handle <<- recplot_py$recruitment_plot_data(name)
 
           updateTextInput(session, "dbname", value = name)
 
@@ -1093,7 +1093,7 @@ recplot_server <- function(input, output, session) {
       return(db)
     }else{
 
-      plot_handle <<- recplot_py_redux$recruitment_plot_data(db)
+      plot_handle <<- recplot_py$recruitment_plot_data(db)
       usable = plot_handle$check_valid()
 
         if(!usable){
@@ -1102,7 +1102,7 @@ recplot_server <- function(input, output, session) {
           db <- "No existing database selected. Try again?"
 
         }else{
-          mod_handle <<- recplot_py_redux$reads_database(db)
+          mod_handle <<- recplot_py$reads_database(db)
 
           plot_handle$get_samples()
 
@@ -1149,7 +1149,7 @@ recplot_server <- function(input, output, session) {
         contigs <- "No genomes selected. Try again?"
       }
 
-      fmt = recplot_py_redux$detect_file_format(contigs)
+      fmt = recplot_py$detect_file_format(contigs)
       if(fmt == "fasta"){
         updateTextInput(session, "contig_file", value = contigs)
       }else{
@@ -1200,7 +1200,7 @@ recplot_server <- function(input, output, session) {
     }else{
 
       if(file.exists(reads)){
-        fmt = recplot_py_redux$detect_file_format(reads)
+        fmt = recplot_py$detect_file_format(reads)
 
         if(fmt == "sam" || fmt == "bam" || fmt == "blast"){
           updateTextInput(session, "read_file", value = reads)
@@ -1259,7 +1259,7 @@ recplot_server <- function(input, output, session) {
 
       if(file.exists(genes)){
 
-        fmt = recplot_py_redux$detect_file_format(genes)
+        fmt = recplot_py$detect_file_format(genes)
 
         if(fmt == "genes"){
           updateTextInput(session, "gene_file", value = genes)
