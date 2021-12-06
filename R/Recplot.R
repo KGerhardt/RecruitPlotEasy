@@ -646,6 +646,8 @@ additional_stats = function(database_handle){
 #This is the GUI function
 
 recplot_UI <- function(){
+  recplot_py <- get_python()
+
   #System/choices issue
   {
 
@@ -981,6 +983,8 @@ recplot_server <- function(input, output, session) {
   exist_db <- "No existing database selected. Try again?"
 
   samples_in_db <- "No database selected or built yet."
+
+  recplot_py <- get_python()
 
   #TODO - this is the contig end cutoff that removes the first & last 75 bp from consideration in avg. depth.
   #These will need to be later incorporated into the interactive inputs
