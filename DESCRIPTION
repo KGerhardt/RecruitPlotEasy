@@ -1,6 +1,6 @@
 Package: RecruitPlotEasy
 Title: An Interactive Recruitment Plot Tool
-Version: 1.0.0.0000
+Version: 1.1.0.0000
 Authors@R: 
     person(given = "Kenji",
            family = "Gerhardt",
