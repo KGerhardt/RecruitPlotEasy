@@ -1890,6 +1890,7 @@ recplot_server <- function(input, output, session) {
 #Dev
 #runApp(list(ui = recplot_UI(), server = recplot_server), launch.browser = T)
 
+#' @export
 RecruitPlotEasy <- function(){
 
   #Import python code.
