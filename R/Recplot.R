@@ -11,19 +11,19 @@
 #' @import shinyalert
 #' @import htmlwidgets
 
-#Dev
-library(reticulate)
-library(ggplot2)
-library(shiny)
-library(data.table)
-library(plotly)
-library(cowplot)
-library(enveomics.R)
-library(shinyBS)
-library(hms)
-library(easycsv)
-library(shinyalert)
-library(htmlwidgets)
+# #Dev
+# library(reticulate)
+# library(ggplot2)
+# library(shiny)
+# library(data.table)
+# library(plotly)
+# library(cowplot)
+# library(enveomics.R)
+# library(shinyBS)
+# library(hms)
+# library(easycsv)
+# library(shinyalert)
+# library(htmlwidgets)
 
 #Helper functions
 {
@@ -57,6 +57,7 @@ library(htmlwidgets)
     if(!py_module_available("numpy")){
       cat("Attempting to install NumPy... ")
       try({
+
         py_install(packages = "numpy", envname = "recruitment_plots", pip = T)
         cat("Done!\n")
       })
@@ -1399,7 +1400,11 @@ recplot_server <- function(input, output, session) {
 
   observeEvent(input$export_reads,{
     if(plot_handle != ""){
+      progress <- shiny::Progress$new()
+      on.exit(progress$close())
+      progress$set(message = "Exporting your reads...", value = 0.5, detail = "Please be patient.")
       plot_handle$export_reads_to_file()
+      progress$set(message = "Exporting your reads...", value = 1, detail = "Please be patient.")
     }
   })
 
@@ -1505,6 +1510,8 @@ recplot_server <- function(input, output, session) {
   observeEvent(input$samples, {
     if(plot_handle != ""){
 
+    plot_handle$reset()
+
     plot_handle$set_sample(input$samples)
     plot_handle$link_to_file()
 
@@ -1531,6 +1538,8 @@ recplot_server <- function(input, output, session) {
 
   observeEvent(input$samples_interact, {
     if(plot_handle != ""){
+    plot_handle$reset()
+
     plot_handle$set_sample(input$samples_interact)
     plot_handle$link_to_file()
 
@@ -1626,6 +1635,7 @@ recplot_server <- function(input, output, session) {
 
   observeEvent(input$get_a_mag, {
     if(plot_handle != ""){
+
       if(input$plot_genes){
         plot_handle$load_genes()
       }
@@ -1717,6 +1727,7 @@ recplot_server <- function(input, output, session) {
 
   observeEvent(input$get_a_mag_interact, {
     if(plot_handle != ""){
+
       if(input$plot_genes){
         plot_handle$load_genes()
       }
