@@ -12,18 +12,18 @@
 #' @import htmlwidgets
 
 #Dev
-# library(reticulate)
-# library(ggplot2)
-# library(shiny)
-# library(data.table)
-# library(plotly)
-# library(cowplot)
-# library(enveomics.R)
-# library(shinyBS)
-# library(hms)
-# library(easycsv)
-# library(shinyalert)
-# library(htmlwidgets)
+library(reticulate)
+library(ggplot2)
+library(shiny)
+library(data.table)
+library(plotly)
+library(cowplot)
+library(enveomics.R)
+library(shinyBS)
+library(hms)
+library(easycsv)
+library(shinyalert)
+library(htmlwidgets)
 
 #Helper functions
 {
@@ -641,6 +641,8 @@ additional_stats = function(database_handle){
   anir = database_handle$ani_r
 
 
+
+
 }
 
 #This is the GUI function
@@ -931,13 +933,14 @@ recplot_UI <- function(){
                                     plotlyOutput("Plotly_interactive", height = "850px")
                              )
                            )
-                  ),
-                  tabPanel("Additional Statistics", mainPanel(
-                    column(12,
-                      plotOutput("additional_stats", height = "850px")
-                    )
 
-                  )
+                  #),
+                  # tabPanel("Additional Statistics", mainPanel(
+                  #   column(12,
+                  #     plotOutput("additional_stats", height = "850px")
+                  #   )
+                  #
+                  # )
 
                   )
       )
@@ -992,7 +995,7 @@ recplot_server <- function(input, output, session) {
   wp = warning_plot()
 
   output$read_recruitment_plot <- renderPlot(wp)
-  output$additional_stats <- renderPlot(wp)
+  #output$additional_stats <- renderPlot(wp)
 
   wp2 = ggplotly(wp)
   output$Plotly_interactive <- renderPlotly(wp2)
@@ -1678,35 +1681,35 @@ recplot_server <- function(input, output, session) {
         return(stat_plot)
 
       }))
-
-      output$additional_stats <- renderPlot(suppressWarnings({
-
-        if(plot_handle == ""){
-          wp = warning_plot()
-          return(wp)
-        }
-
-        if(length(unlist(plot_handle$samples)) == 0){
-          wp = warning_plot()
-          return(wp)
-        }
-
-        if(length(unlist(plot_handle$current_mag)) == 0){
-          wp = warning_plot()
-          return(wp)
-        }
-
-        if(length(unlist(plot_handle$contigs_in_mag)) == 0){
-          wp = warning_plot()
-          return(wp)
-        }
-
-        if(length(unlist(plot_handle$describe_x)) == 0){
-          wp = warning_plot()
-          return(wp)
-        }
-
-      }))
+#
+#       output$additional_stats <- renderPlot(suppressWarnings({
+#
+#         if(plot_handle == ""){
+#           wp = warning_plot()
+#           return(wp)
+#         }
+#
+#         if(length(unlist(plot_handle$samples)) == 0){
+#           wp = warning_plot()
+#           return(wp)
+#         }
+#
+#         if(length(unlist(plot_handle$current_mag)) == 0){
+#           wp = warning_plot()
+#           return(wp)
+#         }
+#
+#         if(length(unlist(plot_handle$contigs_in_mag)) == 0){
+#           wp = warning_plot()
+#           return(wp)
+#         }
+#
+#         if(length(unlist(plot_handle$describe_x)) == 0){
+#           wp = warning_plot()
+#           return(wp)
+#         }
+#
+#       }))
     }
   })
 
@@ -1774,34 +1777,34 @@ recplot_server <- function(input, output, session) {
 
       }))
 
-      output$additional_stats <- renderPlot(suppressWarnings({
-
-        if(plot_handle == ""){
-          wp = warning_plot()
-          return(wp)
-        }
-
-        if(length(unlist(plot_handle$samples)) == 0){
-          wp = warning_plot()
-          return(wp)
-        }
-
-        if(length(unlist(plot_handle$current_mag)) == 0){
-          wp = warning_plot()
-          return(wp)
-        }
-
-        if(length(unlist(plot_handle$contigs_in_mag)) == 0){
-          wp = warning_plot()
-          return(wp)
-        }
-
-        if(length(unlist(plot_handle$describe_x)) == 0){
-          wp = warning_plot()
-          return(wp)
-        }
-
-      }))
+      # output$additional_stats <- renderPlot(suppressWarnings({
+      #
+      #   if(plot_handle == ""){
+      #     wp = warning_plot()
+      #     return(wp)
+      #   }
+      #
+      #   if(length(unlist(plot_handle$samples)) == 0){
+      #     wp = warning_plot()
+      #     return(wp)
+      #   }
+      #
+      #   if(length(unlist(plot_handle$current_mag)) == 0){
+      #     wp = warning_plot()
+      #     return(wp)
+      #   }
+      #
+      #   if(length(unlist(plot_handle$contigs_in_mag)) == 0){
+      #     wp = warning_plot()
+      #     return(wp)
+      #   }
+      #
+      #   if(length(unlist(plot_handle$describe_x)) == 0){
+      #     wp = warning_plot()
+      #     return(wp)
+      #   }
+      #
+      # }))
     }
   })
 
@@ -1909,6 +1912,5 @@ RecruitPlotEasy <- function(){
   }
 
 }
-
 
 
