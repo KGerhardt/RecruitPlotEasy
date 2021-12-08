@@ -12,18 +12,18 @@
 #' @import htmlwidgets
 
 # #Dev
-# library(reticulate)
-# library(ggplot2)
-# library(shiny)
-# library(data.table)
-# library(plotly)
-# library(cowplot)
-# library(enveomics.R)
-# library(shinyBS)
-# library(hms)
-# library(easycsv)
-# library(shinyalert)
-# library(htmlwidgets)
+library(reticulate)
+library(ggplot2)
+library(shiny)
+library(data.table)
+library(plotly)
+library(cowplot)
+library(enveomics.R)
+library(shinyBS)
+library(hms)
+library(easycsv)
+library(shinyalert)
+library(htmlwidgets)
 
 #Helper functions
 {
@@ -641,10 +641,50 @@ additional_stats = function(database_handle){
   tad_n = database_handle$tad_middle
   anir = database_handle$ani_r
 
+  basic_set = unlist(breadths)
 
+  name_id = names(basic_set)
 
+  contigs = unlist(lapply(name_id, function(x){
+
+    return(strsplit(x, split = "[.]")[[1]][1])
+
+  }))
+
+  lens = nchar(contigs)
+
+  pct_ids = as.numeric(substr(name_id, lens+2, nchar(name_id)))
+
+  combined_data = data.table(contig = contigs, y = pct_ids, breadth = unname(unlist(breadths)), depth = unname(unlist(depths)), anir = unname(unlist(anir)))
+  combined_data[, breadth := breadth * 100, ]
+
+  combined_data = combined_data[y >= database_handle$in_grp ,]
+
+  combined_data = combined_data[, .SD[which.min(y)], by = contig]
+  combined_data[, breadth := round(breadth, 2),]
+  combined_data[, depth := round(depth, 2),]
+  combined_data[, anir := round(anir, 2),]
+
+  combined_data[, y := NULL]
+
+  b = combined_data$breadth
+  d = combined_data$depth
+  ani = combined_data$anir
+  n = combined_data$contig
+
+  b = paste("Breadths:", paste(b, collapse = ", "))
+  d = paste(paste0("TAD-", database_handle$tad_middle), paste(d, collapse = ", "))
+  ani = paste("ANIr:", paste(ani, collapse = ", "))
+  n = paste("Genome/Contigs:", paste(n, collapse = ', '))
+
+  combined_data = NULL
+
+  pretty = paste0("The current within-population group (dark blue) has the following:\n\n", n, "\n\n", ani, "\n\n", b, "\n\n", d)
+
+  return(pretty)
 
 }
+
 
 #This is the GUI function
 
@@ -840,6 +880,8 @@ recplot_UI <- function(){
                              h4("Load Selected Genome"),
 
                              actionButton('get_a_mag', '(8) View Selected Genome', icon = icon("jedi-order")),
+                             actionButton('addtl_stats_static', 'Show additional stats', icon = icon("eye")),
+                             bsTooltip('addtl_stats_static', 'Calculates the average percent identity, breadth of coverage, and truncated average depth for the current plot\'s within-population group', placement = 'right'),
 
                              h4("Output Data"),
 
@@ -909,6 +951,8 @@ recplot_UI <- function(){
                              h3("Load Selected Genome"),
 
                              actionButton('get_a_mag_interact', '(6) View selected Genome', icon = icon("jedi-order")),
+                             actionButton('addtl_stats_interact', 'Show additional stats', icon = icon("eye")),
+                             bsTooltip('addtl_stats_interact', 'Calculates the average percent identity, breadth of coverage, and truncated average depth for the current plot\'s within-population group', placement = 'right'),
 
                              h4("Output Data"),
 
@@ -1352,49 +1396,49 @@ recplot_server <- function(input, output, session) {
     }
   })
 
+
   observeEvent(input$local_id, {
     if(plot_handle != ""){
-      plot_handle$pct_id_is_local <- input$local_id
-    }
+      plot_handle$pct_id_is_local <<- input$local_id
+      }
   })
 
   observeEvent(input$multiple_aligns, {
     if(plot_handle != ""){
 
-      plot_handle$only_one_alignment_per_read <- input$multiple_aligns
-
+      plot_handle$only_one_alignment_per_read <<- input$multiple_aligns
     }
   })
 
   observeEvent(input$bh_crit, {
     if(plot_handle != ""){
 
-      plot_handle$best_hit_criteria <- input$bh_crit
+      plot_handle$best_hit_criteria <<- input$bh_crit
 
     }
   })
 
   observeEvent(input$min_align_len, {
     if(plot_handle != ""){
-      plot_handle$min_align_length <- input$min_align_len
+      plot_handle$min_align_length <<- input$min_align_len
     }
   })
 
   observeEvent(input$min_pct_align, {
     if(plot_handle != ""){
-      plot_handle$min_pct_align <- input$min_pct_align
+      plot_handle$min_pct_align <<- input$min_pct_align
     }
   })
 
   observeEvent(input$tadn, {
     if(plot_handle != ""){
-       plot_handle$tad_middle <- input$tadn
+      plot_handle$tad_middle <<- input$tadn
     }
   })
 
   observeEvent(input$plot_genes, {
     if(plot_handle != ""){
-      plot_handle$plotting_genes <- input$plot_genes
+      plot_handle$plotting_genes <<- input$plot_genes
     }
   })
 
@@ -1577,8 +1621,6 @@ recplot_server <- function(input, output, session) {
     plot_handle$set_mag(input$mags_in_db_interact)
     }
   })
-
-  #Width
   observeEvent(input$width, {
     if(plot_handle != ""){
       plot_handle$width = input$width
@@ -1587,33 +1629,33 @@ recplot_server <- function(input, output, session) {
 
   observeEvent(input$width_interact, {
     if(plot_handle != ""){
-      plot_handle$width = input$width_interact
+      plot_handle$width <<- input$width_interact
     }
   })
 
   #Height
   observeEvent(input$height, {
     if(plot_handle != ""){
-      plot_handle$height = input$height
+      plot_handle$height <<- input$height
     }
   })
 
   observeEvent(input$height_interact, {
     if(plot_handle != ""){
-      plot_handle$height = input$height_interact
+      plot_handle$height <<- input$height_interact
     }
   })
 
   #blue box
   observeEvent(input$in_group_min_stat, {
     if(plot_handle != ""){
-      plot_handle$in_grp = input$in_group_min
+      plot_handle$in_grp <<- input$in_group_min_stat
     }
   })
 
   observeEvent(input$in_group_min_interact, {
     if(plot_handle != ""){
-      plot_handle$in_grp = input$in_group_min_interact
+      plot_handle$in_grp <<- input$in_group_min_interact
     }
   })
 
@@ -1621,13 +1663,13 @@ recplot_server <- function(input, output, session) {
 
   observeEvent(input$linear_stat, {
     if(plot_handle != ""){
-      plot_handle$plot_linear = input$linear_stat
+      plot_handle$plot_linear <<- input$linear_stat
     }
   })
 
   observeEvent(input$show_peaks, {
     if(plot_handle != ""){
-      plot_handle$show_peaks = input$show_peaks
+      plot_handle$show_peaks <<- input$show_peaks
     }
   })
 
@@ -1691,35 +1733,6 @@ recplot_server <- function(input, output, session) {
         return(stat_plot)
 
       }))
-#
-#       output$additional_stats <- renderPlot(suppressWarnings({
-#
-#         if(plot_handle == ""){
-#           wp = warning_plot()
-#           return(wp)
-#         }
-#
-#         if(length(unlist(plot_handle$samples)) == 0){
-#           wp = warning_plot()
-#           return(wp)
-#         }
-#
-#         if(length(unlist(plot_handle$current_mag)) == 0){
-#           wp = warning_plot()
-#           return(wp)
-#         }
-#
-#         if(length(unlist(plot_handle$contigs_in_mag)) == 0){
-#           wp = warning_plot()
-#           return(wp)
-#         }
-#
-#         if(length(unlist(plot_handle$describe_x)) == 0){
-#           wp = warning_plot()
-#           return(wp)
-#         }
-#
-#       }))
     }
   })
 
@@ -1788,34 +1801,28 @@ recplot_server <- function(input, output, session) {
 
       }))
 
-      # output$additional_stats <- renderPlot(suppressWarnings({
-      #
-      #   if(plot_handle == ""){
-      #     wp = warning_plot()
-      #     return(wp)
-      #   }
-      #
-      #   if(length(unlist(plot_handle$samples)) == 0){
-      #     wp = warning_plot()
-      #     return(wp)
-      #   }
-      #
-      #   if(length(unlist(plot_handle$current_mag)) == 0){
-      #     wp = warning_plot()
-      #     return(wp)
-      #   }
-      #
-      #   if(length(unlist(plot_handle$contigs_in_mag)) == 0){
-      #     wp = warning_plot()
-      #     return(wp)
-      #   }
-      #
-      #   if(length(unlist(plot_handle$describe_x)) == 0){
-      #     wp = warning_plot()
-      #     return(wp)
-      #   }
-      #
-      # }))
+    }
+  })
+
+  observeEvent(input$addtl_stats_static, {
+    if(plot_handle != ""){
+      if(!is.null(plot_handle$describe_y)){
+      stats = additional_stats(plot_handle)
+      shinyalert("", stats, type = "info")
+      }else{
+        shinyalert("", "You need to load a plot first!", type = 'error')
+      }
+    }
+  })
+
+  observeEvent(input$addtl_stats_interact, {
+    if(plot_handle != ""){
+      if(!is.null(plot_handle$describe_y)){
+      stats = additional_stats(plot_handle)
+      shinyalert("", stats, type = "info")
+    }else{
+      shinyalert("", "You need to load a plot first!", type = 'error')
+    }
     }
   })
 
@@ -1823,6 +1830,7 @@ recplot_server <- function(input, output, session) {
 
   observeEvent(input$add_cart_stat, {
     if(plot_handle != ""){
+    if(!is.null(plot_handle$describe_y)){
       progress <- shiny::Progress$new()
       on.exit(progress$close())
       progress$set(message = "Adding reads to your cart", value = 0.33, detail = "Please be patient.")
@@ -1830,6 +1838,9 @@ recplot_server <- function(input, output, session) {
       plot_handle$select_reads_for_export()
 
       progress$set(message = "Adding reads to your cart", value = 1 , detail = "Please be patient.")
+  }else{
+    shinyalert("", "You need to load a plot first!", type = 'error')
+  }
 
     }
 
@@ -1837,6 +1848,7 @@ recplot_server <- function(input, output, session) {
 
   observeEvent(input$add_cart_interact, {
     if(plot_handle != ""){
+      if(!is.null(plot_handle$describe_y)){
       progress <- shiny::Progress$new()
       on.exit(progress$close())
       progress$set(message = "Adding reads to your cart", value = 0.33, detail = "Please be patient.")
@@ -1844,7 +1856,9 @@ recplot_server <- function(input, output, session) {
       plot_handle$select_reads_for_export()
 
       progress$set(message = "Adding reads to your cart", value = 1 , detail = "Please be patient.")
-
+    }else{
+      shinyalert("", "You need to load a plot first!", type = 'error')
+    }
     }
 
   })
@@ -1923,5 +1937,8 @@ RecruitPlotEasy <- function(){
   }
 
 }
+
+
+
 
 
