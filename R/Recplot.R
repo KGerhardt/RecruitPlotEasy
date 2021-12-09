@@ -10,20 +10,20 @@
 #' @import easycsv
 #' @import shinyalert
 #' @import htmlwidgets
-
-# #Dev
-library(reticulate)
-library(ggplot2)
-library(shiny)
-library(data.table)
-library(plotly)
-library(cowplot)
-library(enveomics.R)
-library(shinyBS)
-library(hms)
-library(easycsv)
-library(shinyalert)
-library(htmlwidgets)
+#
+# # #Dev
+# library(reticulate)
+# library(ggplot2)
+# library(shiny)
+# library(data.table)
+# library(plotly)
+# library(cowplot)
+# library(enveomics.R)
+# library(shinyBS)
+# library(hms)
+# library(easycsv)
+# library(shinyalert)
+# library(htmlwidgets)
 
 #Helper functions
 {
@@ -208,7 +208,7 @@ static_plot = function(database_handle){
   main_plot = ggplot(main, aes(x = x_axis, y = y_axis, fill=log10(normalized_count)))+
     scale_fill_gradient(low = "white", high = "black",  na.value = "#EEF7FA")+
     ylab("Percent Identity") +
-    xlab("Position in Genome") +
+    xlab(paste("Position in Genome", unit_name)) +
     scale_y_continuous(expand = c(0, 0), limits = c(NA, 100 + database_handle$height/2)) +
     scale_x_continuous(expand = c(0, 0), breaks = placement, labels = position_labels) +
     theme(legend.position = "none",
@@ -538,7 +538,7 @@ interactive_plot = function(database_handle){
   main_plot = ggplot(main, aes(x = x_axis, y = y_axis, fill=log10(normalized_count),  text = annot))+
     scale_fill_gradient(low = "white", high = "black",  na.value = "#EEF7FA")+
     ylab("Percent Identity") +
-    xlab("Position in Genome") +
+    xlab(paste("Position in Genome", unit_name)) +
     scale_y_continuous(expand = c(0, 0)) +
     scale_x_continuous(expand = c(0, 0), breaks = placement, labels = position_labels) +
     theme(legend.position = "none",
