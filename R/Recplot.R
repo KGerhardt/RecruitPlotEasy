@@ -1122,8 +1122,9 @@ recplot_server <- function(input, output, session) {
           output$message2 <- renderText(initial_message2)
 
           exist_db <<- name
-          output$exist_dbname = renderText(db)
-          output$db_stat = renderText(db)
+          output$exist_dbname = renderText(name)
+          output$db_stat = renderText(name)
+
         }
       }
 
