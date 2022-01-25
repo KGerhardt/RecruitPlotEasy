@@ -12,18 +12,18 @@
 #' @import htmlwidgets
 #
 # # #Dev
-# library(reticulate)
-# library(ggplot2)
-# library(shiny)
-# library(data.table)
-# library(plotly)
-# library(cowplot)
-# library(enveomics.R)
-# library(shinyBS)
-# library(hms)
-# library(easycsv)
-# library(shinyalert)
-# library(htmlwidgets)
+library(reticulate)
+library(ggplot2)
+library(shiny)
+library(data.table)
+library(plotly)
+library(cowplot)
+library(enveomics.R)
+library(shinyBS)
+library(hms)
+library(easycsv)
+library(shinyalert)
+library(htmlwidgets)
 
 #Helper functions
 {
@@ -1224,6 +1224,7 @@ recplot_server <- function(input, output, session) {
       initial_message <<- paste0(initial_message, "\nGenomes added!")
 
       output$message <- renderText(initial_message)
+
     }
     }
   })
@@ -1286,6 +1287,22 @@ recplot_server <- function(input, output, session) {
       output$message <- renderText(initial_message)
 
       progress$set(message = "Done!", value = 1)
+
+      plot_handle$get_samples()
+
+      samps = unlist(plot_handle$samples)
+
+      samples_in_db <- unlist(samps)
+
+      names(samples_in_db) = samps
+
+      if(length(samps)==0){
+        shinyalert("","I didn't find any samples in this database, but it looks like a RecruitPlotEasy database. It's possible that reads haven't yet been added to it. Reads must be added to the database before anything can be plotted.", type = "info")
+      }else{
+        updateSelectInput(session, "samples", choices = samples_in_db)
+        updateSelectInput(session, "samples_interact", choices = samples_in_db)
+      }
+
     }
     }
   })
