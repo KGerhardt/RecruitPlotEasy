@@ -4,26 +4,30 @@
 #' @import data.table
 #' @import plotly
 #' @import cowplot
-#' @import enveomics.R
 #' @import shinyBS
 #' @import hms
 #' @import easycsv
 #' @import shinyalert
 #' @import htmlwidgets
-#
+
+
+
+#Currently removed.
+#enveomics.R
+
 # # #Dev
-library(reticulate)
-library(ggplot2)
-library(shiny)
-library(data.table)
-library(plotly)
-library(cowplot)
-library(enveomics.R)
-library(shinyBS)
-library(hms)
-library(easycsv)
-library(shinyalert)
-library(htmlwidgets)
+# library(reticulate)
+# library(ggplot2)
+# library(shiny)
+# library(data.table)
+# library(plotly)
+# library(cowplot)
+# library(shinyBS)
+# library(hms)
+# library(easycsv)
+# library(shinyalert)
+# library(htmlwidgets)
+# #library(enveomics.R)
 
 #Helper functions
 {
@@ -349,106 +353,109 @@ static_plot = function(database_handle){
     xlab(label = element_blank()) +
     ylab(label = element_blank())
 
-  if(database_handle$show_peaks){
-
-    depth_in = data.table(depth = database_handle$depth_chart_data$in_group, label = "depth.in", pos = x_ax)
-
-
-    h.breaks <- seq(seqdepth.lim[1], seqdepth.lim[2], length.out = 200)
-    h.mids <- (h.breaks[-1] + h.breaks[-length(h.breaks)])/2
-
-    min_info <- list()
-
-    #min_info$pos.breaks = c(0, base$contiguous_end[match(ddSave$seq_pos[ddSave$group_label == "depth.in"], base$seq_pos)])
-    #min_info$pos.counts.in = ddSave$V1[ddSave$group_label == "depth.in"]
-
-    ends = lapply(database_handle$describe_x, function(x){
-      return(x[[2]])
-    })
-
-    if(length(ends) > 1){
-
-      for(i in 2:length(ends)){
-
-        ends[[i]] = ends[[i]] + max(ends[[i-1]])
-
-      }
-    }
-
-    ends = unname(unlist(ends))
-    ends = c(0, ends)
-
-    min_info$pos.breaks = ends
-    min_info$pos.counts.in = as.integer(depth_in$depth * bin_sizes)
-
-    ### Internal ancilliary function (see `enve.RecPlot2.Peak`).
-    enve.recplot2.__peakHist <- function(x, mids, counts=TRUE){
-      d.o <- x$param.hat
-      if(length(x$log)==0) x$log <- FALSE
-      if(x$log){
-        d.o$x <- log(mids)
-      }else{
-        d.o$x <- mids
-      }
-      prob  <- do.call(paste('d', x$dist, sep=''), d.o)
-      if(!counts) return(prob)
-      if(length(x$values)>0) return(prob*length(x$values)/sum(prob))
-      return(prob*x$n.hat/sum(prob))
-    }
-
-
-    #This is finicky
-
-    try({
-
-      peaks <- enve.recplot2.findPeaks(min_info, method = "em")
-
-    })
-
-    if(length(peaks) > 0){
-
-    try({
-      dpt <- signif(as.numeric(lapply(peaks, function(x) x$seq.depth)), 2)
-      frx <- signif(100 * as.numeric(lapply(peaks,function(x) ifelse(length(x$values) == 0, x$n.hat, length(x$values))/x$n.total)), 2)
-
-      if (peaks[[1]]$err.res < 0) {
-        err <- paste(", LL:", signif(peaks[[1]]$err.res,3))
-      }  else {
-        err <- paste(", err:", signif(as.numeric(lapply(peaks, function(x) x$err.res)), 2))
-      }
-      labels <- paste(letters[1:length(peaks)], ". ", dpt, "X (", frx, "%", err, ")", sep = "")
-
-      peak_counts <- lapply(peaks, enve.recplot2.__peakHist, h.mids)
-
-      plot_breaks = h.breaks[-length(h.breaks)]
-
-      gg_peak_info <- data.table(plot_breaks = rep(plot_breaks, length(peak_counts)), count = unlist(peak_counts), grp = rep(labels, each = length(plot_breaks)))
-
-      depth_hist = depth_hist + geom_line(data = gg_peak_info, aes(x = plot_breaks, y = count, color = grp, group = grp), inherit.aes = F, color = "red", lwd = 1.13)
-
-    })
-
-  }
-  }
+  #TODO
+  #This code is temporarily disabled so that we can fix an enveomics.R dependency
+  # if(database_handle$show_peaks){
+  #
+  #   depth_in = data.table(depth = database_handle$depth_chart_data$in_group, label = "depth.in", pos = x_ax)
+  #
+  #
+  #   h.breaks <- seq(seqdepth.lim[1], seqdepth.lim[2], length.out = 200)
+  #   h.mids <- (h.breaks[-1] + h.breaks[-length(h.breaks)])/2
+  #
+  #   min_info <- list()
+  #
+  #   #min_info$pos.breaks = c(0, base$contiguous_end[match(ddSave$seq_pos[ddSave$group_label == "depth.in"], base$seq_pos)])
+  #   #min_info$pos.counts.in = ddSave$V1[ddSave$group_label == "depth.in"]
+  #
+  #   ends = lapply(database_handle$describe_x, function(x){
+  #     return(x[[2]])
+  #   })
+  #
+  #   if(length(ends) > 1){
+  #
+  #     for(i in 2:length(ends)){
+  #
+  #       ends[[i]] = ends[[i]] + max(ends[[i-1]])
+  #
+  #     }
+  #   }
+  #
+  #   ends = unname(unlist(ends))
+  #   ends = c(0, ends)
+  #
+  #   min_info$pos.breaks = ends
+  #   min_info$pos.counts.in = as.integer(depth_in$depth * bin_sizes)
+  #
+  #   ### Internal ancilliary function (see `enve.RecPlot2.Peak`).
+  #   enve.recplot2.__peakHist <- function(x, mids, counts=TRUE){
+  #     d.o <- x$param.hat
+  #     if(length(x$log)==0) x$log <- FALSE
+  #     if(x$log){
+  #       d.o$x <- log(mids)
+  #     }else{
+  #       d.o$x <- mids
+  #     }
+  #     prob  <- do.call(paste('d', x$dist, sep=''), d.o)
+  #     if(!counts) return(prob)
+  #     if(length(x$values)>0) return(prob*length(x$values)/sum(prob))
+  #     return(prob*x$n.hat/sum(prob))
+  #   }
+  #
+  #
+  #   #This is finicky
+  #
+  #   try({
+  #
+  #     peaks <- enve.recplot2.findPeaks(min_info, method = "em")
+  #
+  #   })
+  #
+  #   if(length(peaks) > 0){
+  #
+  #   try({
+  #     dpt <- signif(as.numeric(lapply(peaks, function(x) x$seq.depth)), 2)
+  #     frx <- signif(100 * as.numeric(lapply(peaks,function(x) ifelse(length(x$values) == 0, x$n.hat, length(x$values))/x$n.total)), 2)
+  #
+  #     if (peaks[[1]]$err.res < 0) {
+  #       err <- paste(", LL:", signif(peaks[[1]]$err.res,3))
+  #     }  else {
+  #       err <- paste(", err:", signif(as.numeric(lapply(peaks, function(x) x$err.res)), 2))
+  #     }
+  #     labels <- paste(letters[1:length(peaks)], ". ", dpt, "X (", frx, "%", err, ")", sep = "")
+  #
+  #     peak_counts <- lapply(peaks, enve.recplot2.__peakHist, h.mids)
+  #
+  #     plot_breaks = h.breaks[-length(h.breaks)]
+  #
+  #     gg_peak_info <- data.table(plot_breaks = rep(plot_breaks, length(peak_counts)), count = unlist(peak_counts), grp = rep(labels, each = length(plot_breaks)))
+  #
+  #     depth_hist = depth_hist + geom_line(data = gg_peak_info, aes(x = plot_breaks, y = count, color = grp, group = grp), inherit.aes = F, color = "red", lwd = 1.13)
+  #
+  #   })
+  #
+  # }
+  # }
 
   depth_hist = depth_hist + coord_flip()
 
-  if(database_handle$show_peaks){
-    if(length(peaks) > 0){
-
-    try({
-      o_max <- max(table(findInterval(depth_in$depth, h.breaks)))*.68
-      x_start = max(h.breaks)
-
-      if(length(labels) > 0){
-      labels = paste(labels, collapse="\n")
-      }
-      depth_hist = depth_hist + annotate("text", label = labels, y = o_max, x = x_start, size = 5, hjust = 1, vjust = 1)
-
-    })
-
-    }
-  }
+  #Same with this.
+  # if(database_handle$show_peaks){
+  #   if(length(peaks) > 0){
+  #
+  #   try({
+  #     o_max <- max(table(findInterval(depth_in$depth, h.breaks)))*.68
+  #     x_start = max(h.breaks)
+  #
+  #     if(length(labels) > 0){
+  #     labels = paste(labels, collapse="\n")
+  #     }
+  #     depth_hist = depth_hist + annotate("text", label = labels, y = o_max, x = x_start, size = 5, hjust = 1, vjust = 1)
+  #
+  #   })
+  #
+  #   }
+  # }
 
 
   total_plot = plot_grid(depth_chart, depth_hist, main_plot, bp_count_hist, align = "hv", ncol = 2, rel_widths = c(2.7, 1), rel_heights = c(1, 2.3))
@@ -875,11 +882,14 @@ recplot_UI <- function(){
 
                              selectInput("linear_stat", "(6) BP Histogram Scale", choices = c("Linear" = T, "Logarithmic" = F), selected = T),
 
-                             checkboxInput("show_peaks", "(7) Display Depth Peaks?"),
+                             #TODO
+                             #This is also disabled and numbers are shifted below to match.
+                             #checkboxInput("show_peaks", "(7) Display Depth Peaks?"),
 
                              h4("Load Selected Genome"),
 
-                             actionButton('get_a_mag', '(8) View Selected Genome', icon = icon("jedi-order")),
+                             #actionButton('get_a_mag', '(8) View Selected Genome', icon = icon("jedi-order")),
+                             actionButton('get_a_mag', '(7) View Selected Genome', icon = icon("jedi-order")),
                              actionButton('addtl_stats_static', 'Show additional stats', icon = icon("eye")),
                              bsTooltip('addtl_stats_static', 'Calculates the average percent identity, breadth of coverage, and truncated average depth for the current plot\'s within-population group', placement = 'right'),
 
@@ -903,8 +913,8 @@ recplot_UI <- function(){
                              bsTooltip("print_stat", "After loading a plot (meaning you should be able to see it), add a name in the associated text box and then click this to print a PDF and save data for the current plot", placement = "right"),
 
 
-
-                             bsTooltip("show_peaks", "Calculate and overlay peaks for the depth of coverage histogram (top right panel)", placement = "right"),
+                             #Same disabling as above.
+                             #bsTooltip("show_peaks", "Calculate and overlay peaks for the depth of coverage histogram (top right panel)", placement = "right"),
 
                              #bsTooltip("recplot_main", "Bottom left panel: a 2-D histogram of the counts of base pairs falling into a bin defined by position in the genome (x-axis) and percent identity (y-axis) Bins are as wide as the genome resolution parameter                             if viewing contigs, and cover genes & intergenic regions in contiguous chunks if viewing genes. The shaded section is the current in-group, which is the dark blue line on the top two plots Top left panel: Average sequencing depth for each x-axis bin on in the bottom left panel. Dark blue corresponds to depth of coverage for bins in the in-group, and light blue to the out-group. Segments at the bottom of the plot have zero coverage. Top right panel: a histogram of the depths of coverage observed in the corresponding in/out group in the sequencing depths chart (top left). If peaks are selected, they correspond to the estimates of the genome's average sequencing depth. Bottom right panel: a histogram of the number of bases falling into each percent identity bin across the entire genome, displayed in linear or log scale depending on your selection.", trigger = "click", placement = "left")
                            ),
@@ -920,7 +930,6 @@ recplot_UI <- function(){
                                        plotOutput("read_recruitment_plot", height = "850px")
 
                                      )
-
 
                            )
                   ),
@@ -1054,7 +1063,7 @@ recplot_server <- function(input, output, session) {
     },
     error = function(cond){
       directory <<- "No directory selected. Try again?"
-      return(directory)
+      updateTextInput(session, "cur_dir", value = paste(directory))
     })
 
     tryCatch({
@@ -1062,7 +1071,7 @@ recplot_server <- function(input, output, session) {
     },
     error = function(cond){
       directory <<- "No directory selected. Try again?"
-      return(directory)
+      updateTextInput(session, "cur_dir", value = paste(directory))
     })
 
     if(length(directory) == 0){
@@ -1192,11 +1201,12 @@ recplot_server <- function(input, output, session) {
     },
     error = function(cond){
       contigs <- "No genomes selected. Try again?"
-      return(contigs)
+      updateTextInput(session, "contig_file", value = contigs)
     })
 
     if(length(contigs) == 0){
       contigs <- "No genomes selected. Try again?"
+      updateTextInput(session, "contig_file", value = contigs)
     }else{
       if(!file.exists(contigs)){
         contigs <- "No genomes selected. Try again?"
@@ -1246,11 +1256,12 @@ recplot_server <- function(input, output, session) {
     },
     error = function(cond){
       reads <- "No reads selected. Try again?"
-      return(reads)
+      updateTextInput(session, "read_file", value = reads)
     })
 
     if(length(reads) == 0){
       reads <- "No reads selected. Try again?"
+      updateTextInput(session, "read_file", value = reads)
     }else{
 
       if(file.exists(reads)){
@@ -1320,11 +1331,12 @@ recplot_server <- function(input, output, session) {
     },
     error = function(cond){
       genes <- "No genes selected. Try again?"
-      return(genes)
+      updateTextInput(session, "gene_file", value = genes)
     })
 
     if(length(genes) == 0){
       genes <- "No genes selected. Try again?"
+      updateTextInput(session, "gene_file", value = genes)
     }else{
 
       if(file.exists(genes)){
@@ -1685,11 +1697,11 @@ recplot_server <- function(input, output, session) {
     }
   })
 
-  observeEvent(input$show_peaks, {
-    if(plot_handle != ""){
-      plot_handle$show_peaks <<- input$show_peaks
-    }
-  })
+  # observeEvent(input$show_peaks, {
+  #   if(plot_handle != ""){
+  #     plot_handle$show_peaks <<- input$show_peaks
+  #   }
+  # })
 
   #data load
 
