@@ -27,7 +27,7 @@ To install RecruitPlotEasy:
    ```R
    devtools::install_github("KGerhardt/RecruitPlotEasy")
    ```
-
+The installation command is also the way to update your version of RecruitPlotEasy to a newer version, as they become available.
 
 # Use
 
@@ -36,3 +36,24 @@ Load the RecruitPlotEasy library and launch the GUI:
 library("RecruitPlotEasy")
 RecruitPlotEasy()
 ```
+
+# Update Python
+
+Updating the version of the python script RecruitPlotEasy uses is a little less straightforward than updating the R code. To do so, open your RStudio and run the following commands:
+
+```R
+library(reticulate)
+use_miniconda(condaenv = "recruitment_plots", required = T)
+recplot_py <- import("RecruitPlotEasy")
+py_install(packages = "RecruitPlotEasy", envname = "recruitment_plots", pip = T)
+```
+You should see a message similar to the following (version numbers may differ)
+
+Collecting RecruitPlotEasy
+  Downloading RecruitPlotEasy-2.0.6-py3-none-any.whl (29 kB)
+Installing collected packages: RecruitPlotEasy
+  Attempting uninstall: RecruitPlotEasy
+    Found existing installation: RecruitPlotEasy 2.0.4
+    Uninstalling RecruitPlotEasy-2.0.4:
+      Successfully uninstalled RecruitPlotEasy-2.0.4
+Successfully installed RecruitPlotEasy-2.0.6
