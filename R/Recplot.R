@@ -1650,6 +1650,9 @@ recplot_server <- function(input, output, session) {
     plot_handle$reset()
     plot_handle$set_mag(input$mags_in_db_interact)
     }
+
+  })
+
   observeEvent(input$width, {
     if(plot_handle != ""){
       plot_handle$width = input$width
@@ -1963,10 +1966,6 @@ recplot_server <- function(input, output, session) {
 
 }
 
-
-#Dev
-#runApp(list(ui = recplot_UI(), server = recplot_server), launch.browser = T)
-
 #' @export
 RecruitPlotEasy <- function(){
 
@@ -1982,8 +1981,6 @@ RecruitPlotEasy <- function(){
   }
 
 }
-
-
 
 
 
