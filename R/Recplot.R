@@ -1650,7 +1650,6 @@ recplot_server <- function(input, output, session) {
     plot_handle$reset()
     plot_handle$set_mag(input$mags_in_db_interact)
     }
-  })
   observeEvent(input$width, {
     if(plot_handle != ""){
       plot_handle$width = input$width
@@ -1717,6 +1716,12 @@ recplot_server <- function(input, output, session) {
       progress$set(message = "Creating Recruitment Plot", value = 0.33, detail = "Loading data. Please be patient.")
 
       plot_handle$create_frame()
+      #Check if the frame is OK or warn
+      if(length(plot_handle$data_for_this_genome) == 0){
+        shinyalert("", "There's no data available for this genome with your current read filtering settings.", type = "info")
+        progress$set(message = "Creating Recruitment Plot", value = 1, detail = "Please be patient")
+      }else{
+
       plot_handle$create_minimal_matrix()
       plot_handle$calculate_marginals()
 
@@ -1762,7 +1767,11 @@ recplot_server <- function(input, output, session) {
 
         return(stat_plot)
 
-      }))
+      }
+
+      ))
+      #End else
+      }
     }
   })
 
@@ -1780,6 +1789,11 @@ recplot_server <- function(input, output, session) {
       progress$set(message = "Creating Recruitment Plot", value = 0.33, detail = "Loading data. Please be patient.")
 
       plot_handle$create_frame()
+      if(length(plot_handle$data_for_this_genome) == 0){
+        shinyalert("", "There's no data available for this genome with your current read filtering settings.", type = "info")
+        progress$set(message = "Creating Recruitment Plot", value = 1, detail = "Please be patient")
+      }else{
+
       plot_handle$create_minimal_matrix()
       plot_handle$calculate_marginals()
 
@@ -1830,7 +1844,8 @@ recplot_server <- function(input, output, session) {
         return(interact_plot)
 
       }))
-
+      #End else
+      }
     }
   })
 
