@@ -11,11 +11,10 @@
 #' @import htmlwidgets
 
 
-
 #Currently removed.
 #enveomics.R
 
-# # #Dev
+# # # #Dev
 # library(reticulate)
 # library(ggplot2)
 # library(shiny)
@@ -1230,10 +1229,25 @@ recplot_server <- function(input, output, session) {
       shinyalert("", "I can't add files unless you select or create a database first.", type = "error")
     }else{
     if(file.exists(input$contig_file)){
+
+      progress <- shiny::Progress$new()
+      on.exit(progress$close())
+      progress$set(message = "Adding genomes...", value = 0.33, detail = "Please be patient.")
+
       mod_handle$set_genomes(input$contig_file, input$one_mag)
+
+      progress$set(message = "Done!", value = 1)
+
       initial_message <<- paste0(initial_message, "\nGenomes added!")
 
       output$message <- renderText(initial_message)
+
+      # if(length(samps)==0){
+      #   shinyalert("","I didn't find any samples in this database, but it looks like a RecruitPlotEasy database. It's possible that reads haven't yet been added to it. Reads must be added to the database before anything can be plotted.", type = "info")
+      # }else{
+      #   updateSelectInput(session, "samples", choices = samples_in_db)
+      #   updateSelectInput(session, "samples_interact", choices = samples_in_db)
+      # }
 
     }
     }
@@ -1265,6 +1279,13 @@ recplot_server <- function(input, output, session) {
     }else{
 
       if(file.exists(reads)){
+
+        if(grepl('-', reads)){
+
+          shinyalert("", "Your read file name includes a '-' character. This is not an acceptable character. Please rename your file and try again.")
+
+        }else{
+
         fmt = recplot_py$detect_file_format(reads)
 
         if(fmt == "sam" || fmt == "bam" || fmt == "blast"){
@@ -1274,6 +1295,7 @@ recplot_server <- function(input, output, session) {
           reads <- "No reads selected. Try again?"
           updateTextInput(session, "read_file", value = reads)
         }
+      }
       }
     }
 
