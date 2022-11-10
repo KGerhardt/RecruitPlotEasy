@@ -81,4 +81,12 @@ Planned features:
 
 ## Reading a Recruitment Plot
 
-Under development
+A recruitment plot conists of one main panel and 5 additional panels that either summarize or annotate the data within the main panel. We'll discuss the main panel first, then look at the others.
+
+### Main Panel
+
+The main panel is the bottom-leftmost panel in the plot. At its heart, it is a 2-dimensional histogram counting bases that fall into successive regions of a genome (x-axis) and increasing ranges of percent identity to the reference sequence (y-axis). The fill color of each bin darkens as the number of bases in the bin increases. White bins contain no bases at all (meaning that not a single read mapped to the region, percent identity window), light blue bins contain a few bases, and dark blue bins contain many.
+
+Overlaid on this plot is a pink rectangle. This pink rectangle highlights the current within-population group, which is defined by a flat percent identity cutoff at and above which reads are considered to have actually originated from the reference sequence, as opposed to reads below this cutoff that are suspected to have originated from more distant relative species. By default, this in-group is set at 95%. This may work for your particular genome and reads, but it is ultimately arbitrary - a slider on the bottom of the plot controls the lower boundary of the within-population cutoff and you are encouraged to move this slider to a point at which the pink rectangle _visually_ separates a region of denser readmapping success from a less-dense region. 
+
+A typical recruitment plot main panel will see the outright majority of reads mapping at 100% identity, with a monotonic decrease to a very small fraction of reads at or above 90% identity. 
