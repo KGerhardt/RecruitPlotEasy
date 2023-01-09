@@ -5,6 +5,10 @@ A tool for interactive Recruitment Plot generation and viewing
 # Requirements
 
 - Python >= 3.9
+- Pyrodigal >= 2.0
+- Plotly
+- Numpy 
+
 
 # Installation
 
