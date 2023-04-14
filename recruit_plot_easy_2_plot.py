@@ -15,7 +15,8 @@ import multiprocessing
 
 class rpdb:
 	def __init__(self, db, id_cut = 95, id_step = 0.5, gen_step = 1000,
-				criteria = "local", id_measure = "local", do_prot = False):
+				criteria = "local", id_measure = "local", do_prot = False,
+				output_base = "recruitment_plots"):
 		
 		self.db = db
 		self.conn = None
@@ -56,6 +57,7 @@ class rpdb:
 		self.y_step = id_step
 		self.x_step = gen_step
 		
+		self.outbase = output_base
 		self.recplot = None
 
 	def open(self):
@@ -221,9 +223,9 @@ class rpdb:
 		return returns_by_bin
 	
 	def load_sample(self):
-		if not os.path.exists("recruitment_plots"):
-			os.mkdir("recruitment_plots")
-		this_samp = os.path.normpath("recruitment_plots/"+self.current_sample)
+		if not os.path.exists(self.outbase):
+			os.mkdir(self.outbase)
+		this_samp = os.path.normpath(self.outbase+"/"+self.current_sample)
 		if not os.path.exists(this_samp):
 			os.mkdir(this_samp)
 	
@@ -309,7 +311,8 @@ class rpdb:
 							protein_info = protein_subset,
 							contig_name_dict = self.mag_contig_ids,
 							mag_name = self.current_mag,
-							sample = self.current_sample) 
+							sample = self.current_sample,
+							outdir = self.outbase) 
 		
 		self.recplot.build()
 	
@@ -317,7 +320,8 @@ class recplot:
 	def __init__(self, data, y, 
 				#cut, 
 				id_step, genome_step, contig_sizes, protein_info, 
-				contig_name_dict, tad = 80, mag_name = None, sample = None):
+				contig_name_dict, tad = 80, mag_name = None, sample = None,
+				outdir = "recruitment_plots"):
 		
 		self.raw_data = data
 		self.contig_sizes = contig_sizes
@@ -371,13 +375,14 @@ class recplot:
 		
 		self.lower_right_data = None
 		
+		self.output_base = outdir
 
 		self.sample = sample
 		self.mag = mag_name
 		if self.do_prot:
-			self.plot_name = os.path.normpath("recruitment_plots/" +self.sample + "/" + mag_name + "_proteins_recruitment_plot.html")
+			self.plot_name = os.path.normpath(self.output_base + "/" +self.sample + "/" + mag_name + "_proteins_recruitment_plot.html")
 		else:
-			self.plot_name = os.path.normpath("recruitment_plots/" +self.sample + "/" + mag_name + "_recruitment_plot.html")
+			self.plot_name = os.path.normpath(self.output_base + "/" +self.sample + "/" + mag_name + "_recruitment_plot.html")
 	
 	#Data comes in as a per-base count 
 	def bin_raw(self):
@@ -684,365 +689,380 @@ class recplot:
 		
 		self.depth_hist_breaks = np.linspace(0, max_obs, num = 199)
 		#reuse depth chart info
+		
 		self.upper_right_in =  np.histogram(self.upper_left_in, bins = self.depth_hist_breaks)[0]
 		self.upper_right_out = np.histogram(self.upper_left_out, bins = self.depth_hist_breaks)[0]
+		
+		#self.upper_right_in = np.histogram(np.log10(self.upper_left_in), bins = self.depth_hist_breaks)[0]
+		#self.upper_right_out = np.histogram(self.upper_left_out, bins = self.depth_hist_breaks)[0]
+		#self.upper_right_in[self.upper_right_in == 0] = 0.01
+		#self.upper_right_out[self.upper_right_out==0] = 0.01
+		#self.upper_right_in = np.log10(self.upper_right_in)
+		#self.upper_right_out = np.log10(self.upper_right_out)
 		
 	def make_plots(self):
 		print("Plotting", self.mag)
 		max_bin_count = self.data.max()
-		min_bin_count = self.data[np.nonzero(self.data)].min()
-		#order of magnitude
-		
-		#smallest oom is this
-		current_oom = -len(str(int(1/min_bin_count))) + 1
-		
-		#current_oom = 0
-		tick_positions = []
-		
-		while min_bin_count < max_bin_count:
-			tick_positions.append(current_oom)
-			min_bin_count *= 10
-			current_oom += 1
+		if max_bin_count < 1: #i.e. max bin == 0, guarantee this with floats by using 1 as the inequality
+			#min_bin_count = 1
+			print("No best-hit reads were found for", self.mag)
+			print("There is no information to plot for this genome under your current settings. This genome will be skipped.")
+			
+		else:
+			min_bin_count = self.data[np.nonzero(self.data)].min()
 
-		tick_labels = []
-		for oom in tick_positions:
-			tick_labels.append("10e"+str(oom))
-		
-		#'#1f77b4' is a medium blue
-		#'#ff7f0e' is a burnt orange
-		#These are colorblind friendly contrasts.
-		
-		overall_plot =  make_subplots(rows=3, cols=2, 
-									column_widths=[0.66, 0.34], 
-									row_heights = [0.30, 0.10, 0.60],
+			#order of magnitude
+			#smallest oom is this
+			current_oom = -len(str(int(1/min_bin_count))) + 1
+			
+			#current_oom = 0
+			tick_positions = []
+			
+			while min_bin_count < max_bin_count:
+				tick_positions.append(current_oom)
+				min_bin_count *= 10
+				current_oom += 1
 
-									shared_xaxes=True,
-									shared_yaxes=True,
-									horizontal_spacing = 0.025,
-									vertical_spacing = 0.035)
-		
-		#This one is strange
-		#The protein hovertext needs multiple lines, but the customdata
-		#arg doesn't appear to work for customdata of more than 1 row
-		#Therefore we just <br>.join() a list of text as the labels.
-		annot_hov = "{text}"
+			tick_labels = []
+			for oom in tick_positions:
+				tick_labels.append("10e"+str(oom))
 			
-		#Protein independent hover templates
-		bot_left_hov = 	"Position in Genome: %{x:0d}<br>" +\
-						"Percent Identity: %{y:}%<br>" +\
-						"Log 10 Base Count: %{z:.4f}<br>" +\
-						"<extra></extra>"
-								
-		#hover data templates
-		in_dep_hov = "Position in Genome: %{x:0d}<br>" +\
-					"Avg. Within-Pop. Depth: %{y:.2f}" +\
-					"<extra></extra>"
+			#'#1f77b4' is a medium blue
+			#'#ff7f0e' is a burnt orange
+			#These are colorblind friendly contrasts.
+			
+			overall_plot =  make_subplots(rows=3, cols=2, 
+										column_widths=[0.66, 0.34], 
+										row_heights = [0.30, 0.10, 0.60],
 
-		out_dep_hov = "Position in Genome: %{x:0d}<br>" +\
-					"Avg. Outside-Pop. Depth: %{y:.2f}" +\
-					"<extra></extra>"
-									
-		#Protein independent hover templates
-		bot_right_hov = "Total Bases: %{x:0d}<br>" +\
-							"Percent Identity: %{y:}%<br>" + \
-							"<extra></extra>"
-							
-							
-		#TAD *could* have protein info, but I don't think it bears a fourth repetition
-		tad_hov = "Contig: %{x:c}<br>" +\
-					"TAD Level: %{y:c}<br>" +\
-					"Depth: %{z:.2f}" +\
-					"<extra></extra>"
-					
-		
-		top_right_hov_in = "Count of Obs.: %{x:0d}<br>" +\
-		"Avg. Within-Pop. Depth: %{y:.4f}<br>" +\
-		"<extra></extra>"
-		
-		top_right_hov_out = "Count of Obs.: %{x:0d}<br>" +\
-		"Avg. Outside-Pop. Depth: %{y:.4f}<br>" +\
-		"<extra></extra>"
-		
-		#bot left main plot
-		#Needs to have labels added.
-		overall_plot.add_trace(go.Heatmap(z=np.log10(self.data), 
-								x = self.bin_mids,
-								y = self.y,
-								colorbar = dict(
-									x = -0.1,
-									tickvals = tick_positions,
-									ticktext = tick_labels
-									),
-								colorscale="blues",
-								hovertemplate = bot_left_hov
-								),
-								row = 3, col = 1)
-		
-		#bot right - only one of these
-		overall_plot.add_trace(go.Bar(x = self.lower_right_data, 
-								y = self.y,
-								orientation='h',
-								marker = dict(color = '#1f77b4'),
-								hovertemplate = bot_right_hov
-								),
-								row = 3, col = 2)
-		
-		#text_rec = []
-		
-		#We just use the protein labels as a repo - normally it would be filled out
-		if not self.do_prot:
-			self.protein_labels = []
-			for c, s, e in zip(self.ct_names, self.bin_left, self.bin_right):
-				next_label = "<br>".join(["Contig: " + c,
-										"Genome Region: " + str(s) + "-" + str(e)
-										])
-				self.protein_labels.append(next_label)
-		
-		overall_plot.add_trace(go.Scatter(x = self.bin_mids,
-								y = [1] * len(self.bin_mids),
-								text = self.protein_labels,
-								marker = dict(color = '#1f77b4'),
-								hoverinfo = "text"
-								),
-								row = 2, col = 1)
-								
-		which_viz = None
-		which_id = None
-		has_default = False
-		group = 0
-		
-		starting_step = len(overall_plot.data)
-		
-		step_groups = {}
-		id_grp = {}
-		
-		
-		tad_ticks = np.linspace(0, self.tad_max, num = 5, dtype = int).tolist()
-		#tad_labels = 
-		tad_colorbar = dict(tickvals = tad_ticks)
-		
-		#Here, we iterate over the in-groups to add traces for each pct id in-group.
-		for pct_id_cutoff in self.y:
-			self.cutoff = pct_id_cutoff
-			#recalculate data
-			self.top_half()
+										shared_xaxes=True,
+										shared_yaxes=True,
+										horizontal_spacing = 0.025,
+										vertical_spacing = 0.035)
 			
-			idname = str(pct_id_cutoff)
-			
-			#print(pct_id_cutoff, self.tad_in, self.cov_in)
-			
-			step_groups[pct_id_cutoff] = [starting_step,
-										starting_step + 1,
-										starting_step + 2,
-										starting_step + 3,
-										starting_step + 4]
-										#starting_step + 5,]
-										
-			starting_step += 5
-											
-			#Set the only default line *near* 95 pct id.
-			if self.cutoff >= 95.0 and not has_default:
-				which_viz = group
-				which_id = pct_id_cutoff
-				has_default = True
-			else:
-				group += 1
-			
-			line_height = self.cutoff-(self.id_step/2)
-			
-			#top left in group
-			overall_plot.add_trace(go.Scatter(x = self.bin_mids, 
-											y = self.upper_left_in,
-											marker = dict(color = '#1f77b4'),
-											visible = False,
-											hovertemplate = in_dep_hov
-											),
-											row = 1, col = 1)
-			#top left out group							
-			overall_plot.add_trace(go.Scatter(x = self.bin_mids,
-											y = self.upper_left_out, 
-											marker = dict(color = '#ff7f0e'),
-											visible = False,
-											hovertemplate = out_dep_hov	
-											), 
-											row = 1, col = 1)
-
-			#mid right tad
-			#Update fixed colorbar, add the coverage values and this is done.
-			overall_plot.add_trace(go.Heatmap(z = self.tad_in,
-											x = self.tad_contigs,
-											y = self.tad_names,
-											visible = False,
-											hovertemplate = tad_hov,
-											colorbar = tad_colorbar,
-											zmin = 0,
-											zmax = self.tad_max*1.05
-											),
-											row = 2, col = 2)
-								
-			#top right in group default
-			overall_plot.add_trace(go.Scatter(x = self.upper_right_in, 
-			y = self.depth_hist_breaks, 
-			marker = dict(color = '#1f77b4'),
-			visible = False,
-			hovertemplate = top_right_hov_in
-			), 
-			row = 1, col = 2)
-			#top right out group default
-			overall_plot.add_trace(go.Scatter(x = self.upper_right_out, 
-			y = self.depth_hist_breaks, 
-			marker = dict(color = '#ff7f0e'),
-			visible = False,
-			hovertemplate = top_right_hov_out
-			), 
-			row = 1, col = 2)
-			
-		#Set default lines as nearest to 90
-		for i in step_groups[which_id]:
-			overall_plot.data[i].visible = True
-			
-		#in-group highlight
-		overall_plot.add_hrect(y0 = which_id-(self.id_step/2), 
-								y1 = 100+(self.id_step/2),
-								row = 3, col = 1,
-								line_width=0,
-								fillcolor="red",
-								opacity=0.13)
-								#,layer="below")
-								
-		overall_plot.add_hrect(y0 = which_id-(self.id_step/2), 
-								y1 = 100+(self.id_step/2),
-								row = 3, col = 2,
-								line_width=0,
-								fillcolor="red",
-								opacity=0.13)
-								#,layer="below")
-			
-		
-			
-		#overall_plot.add_hrect(y0 = 0, y1 = max_tad,
-		#						row = 2, col = 2)
-		
-		left_box = {'type': 'rect', 
-					'x0': 0, 
-					'x1': 1, 
-					'xref': 
-					'x3 domain', 
-					'y0': 0, 
-					'y1': 1, 
-					'yref': 'y3 domain'}
-		
-		right_box = {'type': 'rect', 
-					'x0': 0, 
-					'x1': 1, 
-					'xref': 
-					'x4 domain', 
-					'y0': 0, 
-					'y1': 1, 
-					'yref': 'y4 domain'}
-					
-		initial_shapes = list(overall_plot.layout["shapes"])
-		initial_shapes.append(left_box)
-		initial_shapes.append(right_box)
-		overall_plot.layout["shapes"] = tuple(initial_shapes)
-		
-		steps = []
-		for group in step_groups:
-			step = dict(
-					method="update",
-					args=[{"visible": [False] * len(overall_plot.data)},
-						{"shapes": [{'fillcolor': 'red',
-									#'layer': 'below',
-									'line': {'width': 0},
-									'opacity': 0.13,
-									'type': 'rect',
-									'x0': 0,
-									'x1': 1,
-									'xref': 'x5 domain',
-									'y0': group-(self.id_step/2),
-									'y1': 100+(self.id_step/2),
-									'yref': 'y5'},
-									
-									#lower right highlight
-									{'fillcolor': 'red',
-									#'layer': 'below',
-									'line': {'width': 0},
-									'opacity': 0.13,
-									'type': 'rect',
-									'x0': 0,
-									'x1': 1,
-									'xref': 'x6 domain',
-									'y0': group-(self.id_step/2),
-									'y1': 100+(self.id_step/2),
-									'yref': 'y6'},
-									
-									#mid left box
-									left_box,
-									
-									#mid right box
-									right_box
-									
-									]
-						}],
-									
-					label = str(group)
-			)
-			#lower left and lower right data
-			step["args"][0]["visible"][0] = True
-			step["args"][0]["visible"][1] = True
-			step["args"][0]["visible"][2] = True
-			for i in step_groups[group]:
-				step["args"][0]["visible"][i] = True
+			#This one is strange
+			#The protein hovertext needs multiple lines, but the customdata
+			#arg doesn't appear to work for customdata of more than 1 row
+			#Therefore we just <br>.join() a list of text as the labels.
+			annot_hov = "{text}"
 				
-			steps.append(step)
-			
-		id_slider = [dict(
-			#match default viz
-			active=which_viz,
-			currentvalue={"prefix": "Percent ID cutoff: ", "suffix": "%"},
-			pad={"t": 50},
-			bgcolor = '#1f77b4',
-			steps=steps
-		)]
-			
-			
-		overall_plot['layout']['xaxis2'].pop('matches')
+			#Protein independent hover templates
+			bot_left_hov = 	"Position in Genome: %{x:0d}<br>" +\
+							"Percent Identity: %{y:}%<br>" +\
+							"Log 10 Base Count: %{z:.4f}<br>" +\
+							"<extra></extra>"
+									
+			#hover data templates
+			in_dep_hov = "Position in Genome: %{x:0d}<br>" +\
+						"Avg. Within-Pop. Depth: %{y:.2f}" +\
+						"<extra></extra>"
 
-		overall_plot['layout']['xaxis2']['showticklabels'] = True
-		
-		overall_plot['layout']['yaxis3']['showticklabels'] = False
-		overall_plot['layout']['yaxis3'].pop('matches')
-		
-		overall_plot['layout']['xaxis4'].pop('matches')
-		overall_plot['layout']['yaxis4'].pop('matches')
-		overall_plot['layout']['yaxis4']['showticklabels'] = False
-		
-		
-		#print(overall_plot['layout'])
-		
-		overall_plot.update_layout(showlegend = False)
-		overall_plot.update_layout(margin = dict(t=25))
-		overall_plot.update_xaxes(showgrid=False)
-		overall_plot.update_yaxes(showgrid=False)
-		
-		#overall_plot.update_layout(hovermode="x unified")
-		
-		overall_plot.update_layout(
-			sliders=id_slider
-		)
-		
-		#print(overall_plot)
-		#print(overall_plot['layout'])
-		
-		overall_plot.write_html(self.plot_name)
+			out_dep_hov = "Position in Genome: %{x:0d}<br>" +\
+						"Avg. Outside-Pop. Depth: %{y:.2f}" +\
+						"<extra></extra>"
+										
+			#Protein independent hover templates
+			bot_right_hov = "Total Bases: %{x:0d}<br>" +\
+								"Percent Identity: %{y:}%<br>" + \
+								"<extra></extra>"
+								
+								
+			#TAD *could* have protein info, but I don't think it bears a fourth repetition
+			tad_hov = "Contig: %{x:c}<br>" +\
+						"TAD Level: %{y:c}<br>" +\
+						"Depth: %{z:.2f}" +\
+						"<extra></extra>"
+						
+			
+			top_right_hov_in = "Count of Obs.: %{x:0d}<br>" +\
+			"Avg. Within-Pop. Depth: %{y:.4f}<br>" +\
+			"<extra></extra>"
+			
+			top_right_hov_out = "Count of Obs.: %{x:0d}<br>" +\
+			"Avg. Outside-Pop. Depth: %{y:.4f}<br>" +\
+			"<extra></extra>"
+			
+			#bot left main plot
+			#Needs to have labels added.
+			overall_plot.add_trace(go.Heatmap(z=np.log10(self.data), 
+									x = self.bin_mids,
+									y = self.y,
+									colorbar = dict(
+										x = -0.1,
+										tickvals = tick_positions,
+										ticktext = tick_labels
+										),
+									colorscale="blues",
+									hovertemplate = bot_left_hov
+									),
+									row = 3, col = 1)
+			
+			#bot right - only one of these
+			overall_plot.add_trace(go.Bar(x = self.lower_right_data, 
+									y = self.y,
+									orientation='h',
+									marker = dict(color = '#1f77b4'),
+									hovertemplate = bot_right_hov
+									),
+									row = 3, col = 2)
+			
+			#text_rec = []
+			
+			#We just use the protein labels as a repo - normally it would be filled out
+			if not self.do_prot:
+				self.protein_labels = []
+				for c, s, e in zip(self.ct_names, self.bin_left, self.bin_right):
+					next_label = "<br>".join(["Contig: " + c,
+											"Genome Region: " + str(s) + "-" + str(e)
+											])
+					self.protein_labels.append(next_label)
+			
+			overall_plot.add_trace(go.Scatter(x = self.bin_mids,
+									y = [1] * len(self.bin_mids),
+									text = self.protein_labels,
+									marker = dict(color = '#1f77b4'),
+									hoverinfo = "text"
+									),
+									row = 2, col = 1)
+									
+			which_viz = None
+			which_id = None
+			has_default = False
+			group = 0
+			
+			starting_step = len(overall_plot.data)
+			
+			step_groups = {}
+			id_grp = {}
+			
+			
+			tad_ticks = np.linspace(0, self.tad_max, num = 5, dtype = int).tolist()
+			#tad_labels = 
+			tad_colorbar = dict(tickvals = tad_ticks)
+			
+			#Here, we iterate over the in-groups to add traces for each pct id in-group.
+			for pct_id_cutoff in self.y:
+				self.cutoff = pct_id_cutoff
+				#recalculate data
+				self.top_half()
+				
+				idname = str(pct_id_cutoff)
+				
+				#print(pct_id_cutoff, self.tad_in, self.cov_in)
+				
+				step_groups[pct_id_cutoff] = [starting_step,
+											starting_step + 1,
+											starting_step + 2,
+											starting_step + 3,
+											starting_step + 4]
+											#starting_step + 5,]
+											
+				starting_step += 5
+												
+				#Set the only default line *near* 95 pct id.
+				if self.cutoff >= 95.0 and not has_default:
+					which_viz = group
+					which_id = pct_id_cutoff
+					has_default = True
+				else:
+					group += 1
+				
+				line_height = self.cutoff-(self.id_step/2)
+				
+				#top left in group
+				overall_plot.add_trace(go.Scatter(x = self.bin_mids, 
+												y = self.upper_left_in,
+												marker = dict(color = '#1f77b4'),
+												visible = False,
+												hovertemplate = in_dep_hov
+												),
+												row = 1, col = 1)
+				#top left out group							
+				overall_plot.add_trace(go.Scatter(x = self.bin_mids,
+												y = self.upper_left_out, 
+												marker = dict(color = '#ff7f0e'),
+												visible = False,
+												hovertemplate = out_dep_hov	
+												), 
+												row = 1, col = 1)
+
+				#mid right tad
+				#Update fixed colorbar, add the coverage values and this is done.
+				overall_plot.add_trace(go.Heatmap(z = self.tad_in,
+												x = self.tad_contigs,
+												y = self.tad_names,
+												visible = False,
+												hovertemplate = tad_hov,
+												colorbar = tad_colorbar,
+												zmin = 0,
+												zmax = self.tad_max*1.05
+												),
+												row = 2, col = 2)
+				
+				#Prevent 0-depth outgroups from running away with the scale
+				#max_in_grp = self.upper_right_in.max() + 1
+				#self.upper_right_out[self.upper_right_out > max_in_grp] = max_in_grp
+				
+				#top right in group default
+				overall_plot.add_trace(go.Scatter(x = self.upper_right_in, 
+				y = self.depth_hist_breaks, 
+				marker = dict(color = '#1f77b4'),
+				visible = False,
+				hovertemplate = top_right_hov_in
+				), 
+				row = 1, col = 2)
+				#top right out group default
+				overall_plot.add_trace(go.Scatter(x = self.upper_right_out, 
+				y = self.depth_hist_breaks, 
+				marker = dict(color = '#ff7f0e'),
+				visible = False,
+				hovertemplate = top_right_hov_out
+				), 
+				row = 1, col = 2)
+				
+			#Set default lines as nearest to 90
+			for i in step_groups[which_id]:
+				overall_plot.data[i].visible = True
+				
+			#in-group highlight
+			overall_plot.add_hrect(y0 = which_id-(self.id_step/2), 
+									y1 = 100+(self.id_step/2),
+									row = 3, col = 1,
+									line_width=0,
+									fillcolor="red",
+									opacity=0.13)
+									#,layer="below")
+									
+			overall_plot.add_hrect(y0 = which_id-(self.id_step/2), 
+									y1 = 100+(self.id_step/2),
+									row = 3, col = 2,
+									line_width=0,
+									fillcolor="red",
+									opacity=0.13)
+									#,layer="below")
+				
+			
+				
+			#overall_plot.add_hrect(y0 = 0, y1 = max_tad,
+			#						row = 2, col = 2)
+			
+			left_box = {'type': 'rect', 
+						'x0': 0, 
+						'x1': 1, 
+						'xref': 
+						'x3 domain', 
+						'y0': 0, 
+						'y1': 1, 
+						'yref': 'y3 domain'}
+			
+			right_box = {'type': 'rect', 
+						'x0': 0, 
+						'x1': 1, 
+						'xref': 
+						'x4 domain', 
+						'y0': 0, 
+						'y1': 1, 
+						'yref': 'y4 domain'}
+						
+			initial_shapes = list(overall_plot.layout["shapes"])
+			initial_shapes.append(left_box)
+			initial_shapes.append(right_box)
+			overall_plot.layout["shapes"] = tuple(initial_shapes)
+			
+			steps = []
+			for group in step_groups:
+				step = dict(
+						method="update",
+						args=[{"visible": [False] * len(overall_plot.data)},
+							{"shapes": [{'fillcolor': 'red',
+										#'layer': 'below',
+										'line': {'width': 0},
+										'opacity': 0.13,
+										'type': 'rect',
+										'x0': 0,
+										'x1': 1,
+										'xref': 'x5 domain',
+										'y0': group-(self.id_step/2),
+										'y1': 100+(self.id_step/2),
+										'yref': 'y5'},
+										
+										#lower right highlight
+										{'fillcolor': 'red',
+										#'layer': 'below',
+										'line': {'width': 0},
+										'opacity': 0.13,
+										'type': 'rect',
+										'x0': 0,
+										'x1': 1,
+										'xref': 'x6 domain',
+										'y0': group-(self.id_step/2),
+										'y1': 100+(self.id_step/2),
+										'yref': 'y6'},
+										
+										#mid left box
+										left_box,
+										
+										#mid right box
+										right_box
+										
+										]
+							}],
+						
+						label = str(round(group, 2))
+				)
+				#lower left and lower right data
+				step["args"][0]["visible"][0] = True
+				step["args"][0]["visible"][1] = True
+				step["args"][0]["visible"][2] = True
+				for i in step_groups[group]:
+					step["args"][0]["visible"][i] = True
+					
+				steps.append(step)
+				
+			id_slider = [dict(
+				#match default viz
+				active=which_viz,
+				currentvalue={"prefix": "Percent ID cutoff: ", "suffix": "%"},
+				pad={"t": 50},
+				bgcolor = '#1f77b4',
+				steps=steps
+			)]
+				
+				
+			overall_plot['layout']['xaxis2'].pop('matches')
+
+			overall_plot['layout']['xaxis2']['showticklabels'] = True
+			
+			overall_plot['layout']['yaxis3']['showticklabels'] = False
+			overall_plot['layout']['yaxis3'].pop('matches')
+			
+			overall_plot['layout']['xaxis4'].pop('matches')
+			overall_plot['layout']['yaxis4'].pop('matches')
+			overall_plot['layout']['yaxis4']['showticklabels'] = False
+			
+			
+			#print(overall_plot['layout'])
+			
+			overall_plot.update_layout(showlegend = False)
+			overall_plot.update_layout(margin = dict(t=25))
+			overall_plot.update_xaxes(showgrid=False)
+			overall_plot.update_yaxes(showgrid=False)
+			
+			#overall_plot.update_layout(hovermode="x unified")
+			
+			overall_plot.update_layout(
+				sliders=id_slider
+			)
+			
+			#print(overall_plot)
+			#print(overall_plot['layout'])
+			
+			overall_plot.write_html(self.plot_name)
 		
 		
 	def build(self):
 		self.bin_raw()
 		self.concatenate()
-		#self.depth_chart()
-		#self.depth_histogram()
-		#self.id_histogram()
 		self.make_plots()
 		
 
@@ -1062,6 +1082,9 @@ def plot_opts():
 	parser.add_argument('-i', '--id_step',  dest = 'height', type=float, default = 0.5, 
 	help =  'Pct. ID bin height. Reads will be binned every [height] pct. ID. Default 0.5.')
 	
+	parser.add_argument('-o', '--output',  dest = 'outdir', default = "recruitment_plots", 
+	help =  'Base directory for outputs. Defaults to creating "recruitment_plots/" in the CWD.')
+	
 	args, unknown = parser.parse_known_args()
 	
 	return parser, args
@@ -1079,8 +1102,9 @@ def run_plot():
 	width = opts.width
 	height = opts.height
 	
-
-	mn = rpdb(db, gen_step = width, id_step = height, do_prot = do_proteins)
+	out = opts.outdir
+	
+	mn = rpdb(db, gen_step = width, id_step = height, do_prot = do_proteins, output_base = out)
 	mn.open()
 	mn.parse_db()
 	
@@ -1098,8 +1122,6 @@ def run_plot():
 	
 	for sample in mn.samples:
 		mn.set_sample(sample)
-		#print(mn.mags_in_sample)
-		#print(mn.proteins.keys())
 		for mag in mn.mags_in_sample:
 			mn.set_mag(mag)
 			mn.craft_query()

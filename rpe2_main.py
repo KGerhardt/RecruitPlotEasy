@@ -1,6 +1,3 @@
-#from recruit_plot_easy_2_database import run_build
-#from recruit_plot_easy_2_plot import run_plot
-
 import sys
 
 def main():
@@ -13,11 +10,13 @@ def main():
 			sys.exit()
 		
 		if action == "build":
-			from recruit_plot_easy_2_database import run_build
+			from .recruit_plot_easy_2_database import run_build
+			#from recruit_plot_easy_2_database import run_build
 			run_build()
 			
 		if action == "plot":
-			from recruit_plot_easy_2_plot import run_plot
+			from .recruit_plot_easy_2_plot import run_plot
+			#from recruit_plot_easy_2_plot import run_plot
 			run_plot()
 			
 			

@@ -110,7 +110,6 @@ class pyrodigal_manager:
 			nt = contents[seq].encode()
 			self.sequences[name] = nt
 		
-		
 	#Collect up to the first 32 million bases for use in training seq.
 	def train_manager(self):
 		running_sum = 0
@@ -269,7 +268,11 @@ class pyrodigal_manager:
 				gene_name = seqname + str(count)
 				count += 1
 				renamed[gene_name] = gene.translate()
-				this_annot = (gene.strand, gene.begin, gene.end, str(gene._gene_data),)
+				#print(dir(gene))
+				annotation = ";".join(["GC:" + str(round(gene.gc_cont, 4)),
+										"Start_Type:" +gene.start_type])
+				#print(gene.strand, gene.begin, gene.end, str(gene._gene_data),)
+				this_annot = (gene.strand, gene.begin, gene.end, annotation,)
 				self.annot[gene_name] = this_annot
 				self.source_gen[gene_name] = source
 				
@@ -380,3 +383,10 @@ class pyrodigal_manager:
 		self.predict_and_compare()
 		self.write_aa()
 	
+#Testing section.	
+#import sys
+#mn = pyrodigal_manager(file = sys.argv[1])
+#mn.import_sequences()
+#mn.train_manager()
+#mn.predict_genes()
+#mn.translate()

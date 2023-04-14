@@ -1,3 +1,12 @@
+from .supports.bam_parser import bam_parser
+from .supports.sam_parser import sam_parser
+from .supports.blast_parser import blast_parser
+
+from .supports.file_checker import file_checker
+from .supports.fasta_reader import read_fasta
+from .supports.protein_predictor import pyrodigal_manager
+
+'''
 from supports.bam_parser import bam_parser
 from supports.sam_parser import sam_parser
 from supports.blast_parser import blast_parser
@@ -5,12 +14,14 @@ from supports.blast_parser import blast_parser
 from supports.file_checker import file_checker
 from supports.fasta_reader import read_fasta
 from supports.protein_predictor import pyrodigal_manager
+'''
 
 import sqlite3 as sq
 import numpy as np
 
 import argparse
 import sys
+import os
 
 def convert_array(bytestring):
 	return np.frombuffer(bytestring, dtype = np.int32)
@@ -159,6 +170,9 @@ class rpe_database_builder:
 		reads_added = 0
 				
 		for grouping in parser:
+			if grouping is None:
+				continue
+				
 			next_set = []
 			#One result looks like so
 			#[query, target, pct_id_local, pct_id_global, pct_alignment, covered_ranges]
@@ -184,7 +198,7 @@ class rpe_database_builder:
 				if max_aln > seen_genomes[tgt_gen]:
 					seen_genomes[tgt_gen] = max_aln
 			
-			local, glob, pctaln = grouping[2]*100, grouping[3]*100, grouping[4]*100
+			local, glob, pctaln = grouping[2], grouping[3], grouping[4]
 			
 			for tuple in grouping[5]:
 				start, stop = tuple[0], tuple[1]
@@ -237,14 +251,20 @@ def build_opts():
 	parser.add_argument('-g', '--genome',  dest = 'genome', default = None, 
 	help =  'A path to a genome in nt FASTA format.')
 	
+	parser.add_argument('-gf', '--genome_file',  dest = 'gf', default = None, 
+	help =  'A file containing a list of FASTA-format genomes, one per line. Do not use with --genome at the same time.')
+	
 	parser.add_argument('--mag',  dest = 'is_mag', action = 'store_true', 
-	help =  'Genomes file to add is a MAG: all sequences in this file will be treated as one genome.')
+	help =  'Any genomes to add are MAGs: all sequences in each genome file will be treated as the contigs of one genome.')
 	
 	parser.add_argument('--predict',  dest = 'predict', action = 'store_true', 
-	help =  'Predict proteins for the genome file.')
+	help =  'Predict proteins for each genome file.')
 	
 	parser.add_argument('-r', '--reads',  dest = 'reads', default = None, 
 	help =  'A path to a set of aligned nt reads in SAM, BAM, or tabular BLAST format.')
+	
+	parser.add_argument('-rf', '--reads_file',  dest = 'rf', default = None, 
+	help =  'A file containing a list of aligned nt reads in SAM, BAM, or tabular BLAST format, one set of reads per line. Do not use with --reads at the same time.')
 	
 	parser.add_argument('-d', '--database',  dest = 'db', default = None, 
 	help =  'Path to the database to create. Required.')
@@ -252,6 +272,17 @@ def build_opts():
 	args, unknown = parser.parse_known_args()
 	
 	return parser, args
+
+def load_file_paths(list_file):
+	file_paths = []
+	with open(list_file) as fh:
+		for line in fh:
+			cleaned = line.strip()
+			if os.path.exists(cleaned):
+				file_paths.append(cleaned)
+			else:
+				print("Can't find file:", cleaned, "skipping this file.")
+	return file_paths
 	
 def run_build():
 	parser, opts = build_opts()
@@ -265,21 +296,55 @@ def run_build():
 	reads = opts.reads
 	db = opts.db
 	
+	gf = opts.gf
+	rf = opts.rf
+	
+	if gf is not None:
+		gf_paths = load_file_paths(gf)
+		if len(gf_paths) == 0:
+			gf_paths = None
+	else:
+		gf_paths = None
+	if rf is not None:
+		rf_paths = load_file_paths(rf)
+		if len(rf_paths) == 0:
+			rf_paths = None
+	else:
+		rf_paths = None
+	
+	if reads is not None and rf_paths is not None:
+		sys.exit("Use either --reads or --reads_file, not both.")
+		
+	if genome is not None and gf_paths is not None:
+		sys.exit("Use either --genomes or --genome_file, not both.")
+	
 	if db is None:
 		sys.exit("You need to specify a database.")
 		
-	if reads is None and genome is None:
-		sys.exit("You need to supply at least one of --reads, --genome")
+	if reads is None and genome is None and gf_paths is None and rf_paths is None:
+		sys.exit("You need to supply at least one of --reads, --genome, --reads_file, or --genome_file")
+	
 	
 	mn = rpe_database_builder(db)
 	mn.open()
 	
 	if reads is not None:
 		mn.add_reads_to_db(reads)
+	
+	if rf_paths is not None:
+		for read_file in rf_paths:
+			mn.add_reads_to_db(read_file)
 
 	if genome is not None:
 		mn.add_genomes_to_db_from_file(file = genome, 
 										is_mag = is_mag, 
 										predict = pred)	
+										
+	if gf_paths is not None:
+		for genome_file in gf_paths:
+			mn.add_genomes_to_db_from_file(file = genome_file, 
+										is_mag = is_mag, 
+										predict = pred)
+			
 	mn.close()
 	

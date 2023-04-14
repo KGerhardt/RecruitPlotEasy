@@ -7,21 +7,27 @@ class file_checker:
 		self.original_name = None
 		self.sqlname = None
 		self.get_sql_name()
-		
-	def get_sql_name(self):
-		base = os.path.basename(self.file)
-		self.original_name = base
-		while base != os.path.splitext(base)[0]:
-			base = os.path.splitext(base)[0]
-			
+	
+	def sql_safe(self, string):
+		#Sanitize for SQL
+		#These are chars safe for sql
 		sql_safe = set('_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
-		current_chars = set(base)
+		current_chars = set(string)
 		#self.sql_name = self.basename
 		#Identify SQL-unsafe characters as those outside the permissible set and replace all with underscores.
 		for char in current_chars - sql_safe:
-			base = base.replace(char, "_")
+			string = string.replace(char, "_")
 		
-		self.sqlname = base
+		return string
+	
+	
+	def get_sql_name(self):
+		base = os.path.basename(self.file)
+		self.original_name = base
+		#while base != os.path.splitext(base)[0]:
+		##	base = os.path.splitext(base)[0]
+		
+		self.sqlname = self.sql_safe(self.original_name)
 		
 	def check_is_fasta(self):
 		fh = open(self.file, "r")

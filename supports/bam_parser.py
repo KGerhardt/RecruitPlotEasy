@@ -736,13 +736,13 @@ class bp_iter:
 		
 		total_align = matches+mismatches
 		
-		pct_id_local = matches / total_align
+		pct_id_local = (matches / total_align) * 100
 		#The second item in the last tuple of covered range is the last pos covered + 1, adjust back
 		last_pos_aligned = covered_ranges[len(covered_ranges)-1][1] - 1
 		#We don't need to pad the last pos covered
-		pct_id_global = matches / (last_pos_aligned - start)
+		pct_id_global = (matches / read_len) * 100
 		
-		pct_alignment = total_align / read_len
+		pct_alignment = (total_align / read_len) * 100
 		'''
 		as_np_list = []
 		for tuple in covered_ranges:
@@ -761,8 +761,7 @@ class bp_iter:
 			return line
 		else:
 			raise StopIteration
-		
-		
+			
 class bam_parser:
 	def __init__(self, file):
 		self.file = file

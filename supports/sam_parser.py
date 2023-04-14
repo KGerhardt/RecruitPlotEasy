@@ -23,7 +23,6 @@ class sp_iter:
 		if query is None or query == "":
 			return None
 		
-		
 		target = segs[2]
 		#Sam is 1-indexed. For python, we want 0.
 		start = int(segs[3]) - 1
@@ -47,13 +46,13 @@ class sp_iter:
 		
 		total_align = matches+mismatches
 		
-		pct_id_local = matches / total_align
+		pct_id_local = (matches / total_align) * 100
 		#The second item in the last tuple of covered range is the last pos covered + 1, adjust it back
 		last_pos_aligned = covered_ranges[len(covered_ranges)-1][1] - 1
 		#We don't need to pad the last pos covered
-		pct_id_global = matches / (last_pos_aligned - start)
+		pct_id_global = (matches / read_len) * 100
 		
-		pct_alignment = total_align / read_len
+		pct_alignment = (total_align / read_len) * 100
 		'''
 		as_np_list = []
 		for tuple in covered_ranges:
