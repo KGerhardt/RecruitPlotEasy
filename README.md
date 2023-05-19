@@ -30,12 +30,14 @@ rpe
 
 There are no differences between these methods of calling RecruitPlotEasy - rpe is just a convenient shorthand.
 
-Regardless of which prefix you use, you then have to select an action. The two actions are "build" and "plot". Use looks like this:
+Regardless of which prefix you use, you then have to select an action. The three actions are "build", "plot", and "describe". Usage of the actions looks like this:
 
 ```bash
 rpe build
 
 rpe plot
+
+rpe describe
 ```
 
 Each has its own set of options that will print to the screen if you use either action without any other arguments, or add --help. 
@@ -55,11 +57,6 @@ Sequences added with --genome will always overwrite data in a RecruitPlotEasy da
 rpe build -d my_db.db -r reads.sam -g genomes.fna --mag
 ```
 
-Planned features:
-
-* Adding multiple reads, genomes at once
-* Specifying MAG identity for multiple MAGs at once
-
 ## Plot
 
 RecruitPlotEasy's plotting functionality is designed to produce a recruitment plot for every single genome/MAG in every single sample in the database. A directory called "recruitment_plots" will be created in your working directory, which will contain a subdirectory for each sample. Inside each sample directory, you will find a recruitment plot HTML file for each genome/MAG.
@@ -74,14 +71,27 @@ Last, -p / --proteins instructs RecruitPlotEasy to plot proteins as the genome b
 
 The recruitment plots produced by RecruitPlotEasy are otherwise completely standalone. They are simple (albeit large) HTML files and will open in any web browser without any other kind of installation. They can be passed to other uses who do not have RecruitPlotEasy installed (or even Python) and they will still function identically.
 
+To produce plots for only some of the MAGs in a RecruitPlotEasy database, use the --mag (for exactly one MAG) or --mag_file (for one or more MAGs) arguments! RecruitPlotEasy will plot this MAG in every sample where it's found!
+
 ```bash
 #example plot
 rpe plot -d my_db.db -w 3000
+
+rpe plot -d my_db.db -w 3000 --mag just_this_mag
 ```
 
-Planned features:
+## Describe
 
-* A filter for genomes/MAGs with insufficient coverage to prevent pointless plots.
+RecruitPlotEasy's describe module provides a quick way of checking out the contents of a RecruitPlotEasy database as produced with the "build" action discussed above. 
+
+Give the describe module a RecruitPlotEasy database and paths to your choices of three outputs: a MAG/genome list text file, a per-sample MAG/genome text file with read and base pair counts, and an interactive HTML heatmap of MAG/genome presence or absence in each sample in the database, colored by read counts.
+
+You can use the mags file produced by this module as an input for RecruitPlotEasy's --mag_file argument. It's a good starting point for subsetting what you want to plot - just delete the rows from the output file with the names of MAGs you don't want, and whatever's left will be plotted.
+
+```bash
+#example describe
+rpe describe -d my_db.db --mags_file my_mags.txt --samples_file these_samples.txt --heatmap where_are_my_mags.html
+```
 
 ## Reading a Recruitment Plot
 
