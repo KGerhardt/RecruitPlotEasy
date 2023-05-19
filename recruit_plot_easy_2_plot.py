@@ -11,7 +11,7 @@ import sqlite3 as sq
 
 import argparse
 
-import multiprocessing
+#import multiprocessing
 
 class rpdb:
 	def __init__(self, db, id_cut = 95, id_step = 0.5, gen_step = 1000,
@@ -321,7 +321,10 @@ class recplot:
 				#cut, 
 				id_step, genome_step, contig_sizes, protein_info, 
 				contig_name_dict, tad = 80, mag_name = None, sample = None,
-				outdir = "recruitment_plots"):
+				outdir = "recruitment_plots", selected_mags = None,
+				font_size = 18, in_group_col = '#ff7f0e', 
+				out_group_col = '#1f77b4', overlay_alpha = 0.25,
+				scroll_zoom = False, save_static_img_as = "svg"):
 		
 		self.raw_data = data
 		self.contig_sizes = contig_sizes
@@ -379,11 +382,41 @@ class recplot:
 
 		self.sample = sample
 		self.mag = mag_name
+		
 		if self.do_prot:
 			self.plot_name = os.path.normpath(self.output_base + "/" +self.sample + "/" + mag_name + "_proteins_recruitment_plot.html")
 		else:
 			self.plot_name = os.path.normpath(self.output_base + "/" +self.sample + "/" + mag_name + "_recruitment_plot.html")
-	
+		
+
+		self.save_img_fmt = save_static_img_as
+		self.scrollable = scroll_zoom
+		
+		self.html_config = {
+			'scrollZoom': self.scrollable,
+				'toImageButtonOptions': {
+				'format': self.save_img_fmt, # one of png, svg, jpeg, webp
+				'filename': self.plot_name,
+				'height': 1080,
+				'width': 1920,
+				'scale': 1 # Multiply title/legend/axis/canvas sizes by this factor
+		  }
+		}
+		
+		self.bot_right_line_col = 'rgb(66,146,198)'
+		self.main_plot_fill_colorscale = ['rgb(247,251,255)', 'rgb(222,235,247)', 'rgb(198,219,239)', 'rgb(158,202,225)', 'rgb(107,174,214)', 'rgb(66,146,198)', 'rgb(33,113,181)', 'rgb(8,81,156)', 'rgb(8,48,107)']
+		
+		self.main_plot_highlight_col = in_group_col
+		
+		self.main_plot_highlight_alpha = overlay_alpha
+		
+		#'#1f77b4' is a medium blue
+		#'#ff7f0e' is a burnt orange
+		self.in_group_depth_col = in_group_col
+		self.out_group_depth_col = out_group_col
+		
+		self.axis_font_size = font_size
+		
 	#Data comes in as a per-base count 
 	def bin_raw(self):
 		print("Processing", self.mag)
@@ -706,7 +739,7 @@ class recplot:
 		if max_bin_count < 1: #i.e. max bin == 0, guarantee this with floats by using 1 as the inequality
 			#min_bin_count = 1
 			print("No best-hit reads were found for", self.mag)
-			print("There is no information to plot for this genome under your current settings. This genome will be skipped.")
+			print("There is no information to plot for this genome under your current read filtering settings. This genome will be skipped.")
 			
 		else:
 			min_bin_count = self.data[np.nonzero(self.data)].min()
@@ -726,10 +759,6 @@ class recplot:
 			tick_labels = []
 			for oom in tick_positions:
 				tick_labels.append("10e"+str(oom))
-			
-			#'#1f77b4' is a medium blue
-			#'#ff7f0e' is a burnt orange
-			#These are colorblind friendly contrasts.
 			
 			overall_plot =  make_subplots(rows=3, cols=2, 
 										column_widths=[0.66, 0.34], 
@@ -790,9 +819,10 @@ class recplot:
 									colorbar = dict(
 										x = -0.1,
 										tickvals = tick_positions,
-										ticktext = tick_labels
+										ticktext = tick_labels,
+										tickfont = {"size": self.axis_font_size}
 										),
-									colorscale="blues",
+									colorscale=self.main_plot_fill_colorscale,
 									hovertemplate = bot_left_hov
 									),
 									row = 3, col = 1)
@@ -801,7 +831,7 @@ class recplot:
 			overall_plot.add_trace(go.Bar(x = self.lower_right_data, 
 									y = self.y,
 									orientation='h',
-									marker = dict(color = '#1f77b4'),
+									marker = dict(color = self.bot_right_line_col),
 									hovertemplate = bot_right_hov
 									),
 									row = 3, col = 2)
@@ -820,7 +850,7 @@ class recplot:
 			overall_plot.add_trace(go.Scatter(x = self.bin_mids,
 									y = [1] * len(self.bin_mids),
 									text = self.protein_labels,
-									marker = dict(color = '#1f77b4'),
+									marker = dict(color = self.in_group_depth_col),
 									hoverinfo = "text"
 									),
 									row = 2, col = 1)
@@ -835,10 +865,10 @@ class recplot:
 			step_groups = {}
 			id_grp = {}
 			
-			
 			tad_ticks = np.linspace(0, self.tad_max, num = 5, dtype = int).tolist()
 			#tad_labels = 
-			tad_colorbar = dict(tickvals = tad_ticks)
+			tad_colorbar = dict(tickvals = tad_ticks, 
+								tickfont = {"size" : self.axis_font_size})
 			
 			#Here, we iterate over the in-groups to add traces for each pct id in-group.
 			for pct_id_cutoff in self.y:
@@ -869,21 +899,23 @@ class recplot:
 				
 				line_height = self.cutoff-(self.id_step/2)
 				
-				#top left in group
-				overall_plot.add_trace(go.Scatter(x = self.bin_mids, 
-												y = self.upper_left_in,
-												marker = dict(color = '#1f77b4'),
-												visible = False,
-												hovertemplate = in_dep_hov
-												),
-												row = 1, col = 1)
+
 				#top left out group							
 				overall_plot.add_trace(go.Scatter(x = self.bin_mids,
 												y = self.upper_left_out, 
-												marker = dict(color = '#ff7f0e'),
+												marker = dict(color = self.out_group_depth_col),
 												visible = False,
 												hovertemplate = out_dep_hov	
 												), 
+												row = 1, col = 1)
+												
+				#top left in group - this goes second so that it's plotted on top in the layers
+				overall_plot.add_trace(go.Scatter(x = self.bin_mids, 
+												y = self.upper_left_in,
+												marker = dict(color = self.in_group_depth_col),
+												visible = False,
+												hovertemplate = in_dep_hov
+												),
 												row = 1, col = 1)
 
 				#mid right tad
@@ -903,20 +935,22 @@ class recplot:
 				#max_in_grp = self.upper_right_in.max() + 1
 				#self.upper_right_out[self.upper_right_out > max_in_grp] = max_in_grp
 				
-				#top right in group default
-				overall_plot.add_trace(go.Scatter(x = self.upper_right_in, 
-				y = self.depth_hist_breaks, 
-				marker = dict(color = '#1f77b4'),
-				visible = False,
-				hovertemplate = top_right_hov_in
-				), 
-				row = 1, col = 2)
+
 				#top right out group default
 				overall_plot.add_trace(go.Scatter(x = self.upper_right_out, 
 				y = self.depth_hist_breaks, 
-				marker = dict(color = '#ff7f0e'),
+				marker = dict(color = self.out_group_depth_col),
 				visible = False,
 				hovertemplate = top_right_hov_out
+				), 
+				row = 1, col = 2)
+				
+				#top right in group default - same ordering issue as above.
+				overall_plot.add_trace(go.Scatter(x = self.upper_right_in, 
+				y = self.depth_hist_breaks, 
+				marker = dict(color = self.in_group_depth_col),
+				visible = False,
+				hovertemplate = top_right_hov_in
 				), 
 				row = 1, col = 2)
 				
@@ -929,22 +963,26 @@ class recplot:
 									y1 = 100+(self.id_step/2),
 									row = 3, col = 1,
 									line_width=0,
-									fillcolor="red",
-									opacity=0.13)
+									#line_width=5,
+									fillcolor=self.main_plot_highlight_col,
+									#line_color=self.main_plot_highlight_col,
+									#line_dash="dash")
+									opacity=self.main_plot_highlight_alpha)
 									#,layer="below")
 									
 			overall_plot.add_hrect(y0 = which_id-(self.id_step/2), 
 									y1 = 100+(self.id_step/2),
 									row = 3, col = 2,
 									line_width=0,
-									fillcolor="red",
-									opacity=0.13)
+									#line_width=5,
+									fillcolor=self.main_plot_highlight_col,
+									#line_color=self.main_plot_highlight_col,
+									#line_dash="dash")
+									opacity=self.main_plot_highlight_alpha)
 									#,layer="below")
+									
+			#print(overall_plot.layout['shapes'])
 				
-			
-				
-			#overall_plot.add_hrect(y0 = 0, y1 = max_tad,
-			#						row = 2, col = 2)
 			
 			left_box = {'type': 'rect', 
 						'x0': 0, 
@@ -964,6 +1002,8 @@ class recplot:
 						'y1': 1, 
 						'yref': 'y4 domain'}
 						
+						
+						
 			initial_shapes = list(overall_plot.layout["shapes"])
 			initial_shapes.append(left_box)
 			initial_shapes.append(right_box)
@@ -974,10 +1014,10 @@ class recplot:
 				step = dict(
 						method="update",
 						args=[{"visible": [False] * len(overall_plot.data)},
-							{"shapes": [{'fillcolor': 'red',
+							{"shapes": [{'line': {'width': 0, 'color' : self.main_plot_highlight_col, 'dash' : 'dash'},
+										'fillcolor': self.main_plot_highlight_col,
 										#'layer': 'below',
-										'line': {'width': 0},
-										'opacity': 0.13,
+										'opacity': self.main_plot_highlight_alpha,
 										'type': 'rect',
 										'x0': 0,
 										'x1': 1,
@@ -987,10 +1027,10 @@ class recplot:
 										'yref': 'y5'},
 										
 										#lower right highlight
-										{'fillcolor': 'red',
+										{'line': {'width': 0, 'color' : self.main_plot_highlight_col, 'dash' : 'dash'},
+										'fillcolor': self.main_plot_highlight_col,
 										#'layer': 'below',
-										'line': {'width': 0},
-										'opacity': 0.13,
+										'opacity': self.main_plot_highlight_alpha,
 										'type': 'rect',
 										'x0': 0,
 										'x1': 1,
@@ -1011,9 +1051,9 @@ class recplot:
 						label = str(round(group, 2))
 				)
 				#lower left and lower right data
-				step["args"][0]["visible"][0] = True
-				step["args"][0]["visible"][1] = True
-				step["args"][0]["visible"][2] = True
+				step["args"][0]["visible"][0] = True #lower left
+				step["args"][0]["visible"][1] = True #lower right
+				step["args"][0]["visible"][2] = True #annotation mid left
 				for i in step_groups[group]:
 					step["args"][0]["visible"][i] = True
 					
@@ -1024,8 +1064,10 @@ class recplot:
 				active=which_viz,
 				currentvalue={"prefix": "Percent ID cutoff: ", "suffix": "%"},
 				pad={"t": 50},
-				bgcolor = '#1f77b4',
-				steps=steps
+				bgcolor = self.in_group_depth_col,
+				steps=steps,
+				#tickfont = {"size" : self.axis_font_size},
+				font = {"size" : self.axis_font_size}
 			)]
 				
 				
@@ -1048,16 +1090,30 @@ class recplot:
 			overall_plot.update_xaxes(showgrid=False)
 			overall_plot.update_yaxes(showgrid=False)
 			
+			overall_plot.update_xaxes(tickfont = {"size" : self.axis_font_size})
+			overall_plot.update_yaxes(tickfont = {"size" : self.axis_font_size})
+			
 			#overall_plot.update_layout(hovermode="x unified")
 			
 			overall_plot.update_layout(
-				sliders=id_slider
+				sliders=id_slider,
+				plot_bgcolor='#f2f2f2'
 			)
 			
-			#print(overall_plot)
-			#print(overall_plot['layout'])
 			
-			overall_plot.write_html(self.plot_name)
+			#print(overall_plot.data[0])
+			
+			#relayer = list(overall_plot.data)[2:]
+			#relayer.append(overall_plot.data[0])
+			#relayer.append(overall_plot.data[1])
+			#relayer = tuple(relayer)
+			#overall_plot.data = relayer
+			#relayer = None
+			
+			#print(overall_plot.data[0])
+			#print(overall_plot.data[-2])
+			
+			overall_plot.write_html(self.plot_name, config = self.html_config)
 		
 		
 	def build(self):
@@ -1085,6 +1141,12 @@ def plot_opts():
 	parser.add_argument('-o', '--output',  dest = 'outdir', default = "recruitment_plots", 
 	help =  'Base directory for outputs. Defaults to creating "recruitment_plots/" in the CWD.')
 	
+	parser.add_argument('-m', '--mag',  dest = 'mag', default = None, 
+	help =  'Plot only this MAG and exit.')
+	
+	parser.add_argument('--mag_file',  dest = 'mf', default = None, 
+	help =  'A file containing the names of MAGs to plot, one per line. Only these MAGs will be plotted.')
+	
 	args, unknown = parser.parse_known_args()
 	
 	return parser, args
@@ -1096,7 +1158,12 @@ def run_plot():
 		print("You must supply a database. Quitting.")
 		parser.print_help()
 		sys.exit()
-		
+	else:
+		if not os.path.exists(db):
+			print("Database", db, "could not be found.")
+			print("Have you created one with RecruitPlotEasy build yet?  Quitting.")
+			sys.exit()
+	
 	do_proteins = opts.prot
 	
 	width = opts.width
@@ -1104,9 +1171,46 @@ def run_plot():
 	
 	out = opts.outdir
 	
+	#Mag files
+	mag = opts.mag
+	mf = opts.mf
+	
 	mn = rpdb(db, gen_step = width, id_step = height, do_prot = do_proteins, output_base = out)
 	mn.open()
 	mn.parse_db()
+	
+	try:
+		mags_to_plot = list(mn.genomes.keys())
+	except:
+		mags_to_plot = None
+	
+	if mag is not None:
+		#check if the MAG is in the db.
+		if mag in mn.genomes:
+			print("MAG", mag, "detected. Plotting...")
+			mags_to_plot = [mag]
+		else:
+			mags_to_plot = None
+			print("Requested MAG:", mag, "was not found in the database. It cannot be plotted.")
+			print("Consider RecruitPlotEasy's describe module to take a look at your databases' contents.")
+			
+	if mf is not None:
+		mags_to_plot = []
+		with open(mf) as fh:
+			for line in fh:
+				mag = line.strip()
+				mags_to_plot.append(mag)
+	
+	if mags_to_plot is not None:
+		if len(mags_to_plot) == 0:
+			mags_to_plot = None
+		else:
+			mags_to_plot = ['"'+m+'"' for m in mags_to_plot]
+			mags_to_plot = set(mags_to_plot)
+	
+	if mags_to_plot is None:
+		print("No valid MAGs or genomes were detected for plotting.\nRecruitPlotEasy needs at least one to proceed.\n\nQuitting.")
+		sys.exit()
 	
 	if do_proteins:
 		if mn.proteins is None:
@@ -1123,9 +1227,10 @@ def run_plot():
 	for sample in mn.samples:
 		mn.set_sample(sample)
 		for mag in mn.mags_in_sample:
-			mn.set_mag(mag)
-			mn.craft_query()
-			mn.load_sample()
+			if mag in mags_to_plot:
+				mn.set_mag(mag)
+				mn.craft_query()
+				mn.load_sample()
 		
 	mn.close()
 
