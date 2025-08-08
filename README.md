@@ -4,10 +4,10 @@ A tool for interactive Recruitment Plot generation and viewing
 
 # Requirements
 
-- Python >= 3.9
+- Python >= 3.9, <= 3.12 
 - Pyrodigal >= 2.0
 - Plotly
-- Numpy 
+- Numpy < 2.0
 
 
 # Installation
@@ -15,7 +15,7 @@ A tool for interactive Recruitment Plot generation and viewing
 RecruitPlotEasy and its dependencies are installed via pip. Simply run:
 
 ```bash
-pip install RecruitPlotEasy
+pip install RecruitPlotEasy numpy=1.26.4
 ```
 
 # Use
