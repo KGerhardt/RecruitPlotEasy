@@ -121,7 +121,7 @@ class rpdb_descriptor:
 				sample_enum[sample] = idx
 				idx += 1
 				
-			reads_per_samp_by_mag = np.empty(shape = (len(mag_enum), len(sample_enum)), dtype = np.float_)
+			reads_per_samp_by_mag = np.empty(shape = (len(mag_enum), len(sample_enum)), dtype = np.float64)
 			reads_per_samp_by_mag[:] = np.nan
 					
 			for row in self.samples_info:
@@ -230,4 +230,5 @@ def run_descriptor():
 	mn = rpdb_descriptor(db = db, mf = mf, sf = sf, hm = hm)
 	mn.run()
 		
+
 #run_descriptor()
