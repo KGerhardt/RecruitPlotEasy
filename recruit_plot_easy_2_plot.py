@@ -231,7 +231,7 @@ class rpdb:
 	
 		num_ybins = int((self.y_max-self.y_min) / self.y_step)+1
 		
-		self.y_bins = np.linspace(self.y_min, self.y_max, num = num_ybins, dtype = np.float_)
+		self.y_bins = np.linspace(self.y_min, self.y_max, num = num_ybins, dtype = np.float64)
 		
 		self.contig_lens_by_id = {}
 		
@@ -547,11 +547,11 @@ class recplot:
 				
 			breadth_and_depth = np.zeros(contig_len, dtype = np.int32)
 			
-			self.breadths[contig] = np.zeros(self.y.shape[0], dtype = np.float_)
-			#self.tad_values[contig] = np.zeros(shape = (self.y.shape[0], total_tads), dtype = np.float_)
+			self.breadths[contig] = np.zeros(self.y.shape[0], dtype = np.float64)
+			#self.tad_values[contig] = np.zeros(shape = (self.y.shape[0], total_tads), dtype = np.float64)
 			
 			last_added_breadth = 0
-			last_added_depth = np.zeros(total_tads, dtype = np.float_)
+			last_added_depth = np.zeros(total_tads, dtype = np.float64)
 		
 			starts = np.multiply(tads, contig_len)
 			ends = np.subtract(contig_len, starts)
@@ -1233,6 +1233,7 @@ def run_plot():
 				mn.load_sample()
 		
 	mn.close()
+
 
 
 
